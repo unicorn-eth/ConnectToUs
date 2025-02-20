@@ -1,27 +1,29 @@
-# ConnectToUs
-How to connect your dApp to Unicorn.eth / MyUnicornAccount accounts
+# Add Your dApp to the ETHDenver App Center
+How to enable autoConnect for your dApp to so it can be added to the ETHDenver wallet. This will expose your dApp to the 15k+ attendees at ETHDenver and make it an optional dApp for all future Unicorn.eth deployments.
 
-# autoConnect Documentation
+Once you have completed these steps, please come to the Unicorn.eth booth so we can ensure your dApp can be added to the ETHDenver App Center and accessible to the ETHDenver Community at [https://app.ethdenver.com](https://app.ethdenver.com/) .
 
-Unicorn is committed to delivering best-in-class UX and safety for its users. Our autoConnect feature ensures a seamless and secure experience by:
+## AutoConnect Documentation
 
-- Preventing interactions with phishing links or malicious dApps designed to steal user funds.
-- Eliminating friction associated with traditional wallet connection flows.
+Unicorn.eth is committed to delivering best-in-class UX and safety for its users. Our autoConnect feature ensures a seamless and secure experience by:
+
 - Automatically handling chain and network switching for users.
+- Eliminating friction associated with traditional wallet connection flows.
+- Preventing interactions with phishing links or malicious dApps designed to steal user funds.
 
 ## How It Works
 
-Unicorn wallets can only connect to dApps that integrate our autoConnect function and are whitelisted by community admins. Adding custom dApps to the Unicorn App Store is straightforward.
+Unicorn wallets can only connect to dApps that integrate our autoConnect function and are whitelisted by community admins. Adding custom dApps to the Unicorn App Center is straightforward.
 
-To list a dApp on the Unicorn App Store, you must enable automatic wallet connection. Our smart contract wallets are issued by [Thirdweb](https://thirdweb.com/), so you need to integrate their SDK to establish this connection.
+To list a dApp on the Unicorn App Store, you must enable automatic wallet connection. Our smart contract wallets are issued by [Thirdweb](https://thirdweb.com/), so you must integrate their SDK to establish this connection.
 
 ---
 
-## Integration Guide
+# Integration Guide
 
 There are three primary methods to integrate autoConnect based on your existing setup and framework.
 
-### 1. For React dApps Using the Thirdweb SDK
+## 1. For React dApps Using the Thirdweb SDK
 
 Use this method if your dApp is already built with the Thirdweb SDK. This is the simplest approach and allows seamless integration without additional dependencies.
 
@@ -75,7 +77,7 @@ Use this method if your dApp is already built with the Thirdweb SDK. This is the
     ```
     
 
-### 2. For React dApps Using the Wagmi Library
+## 2. For React dApps Using the Wagmi Library
 
 Use this approach if your dApp is built using Wagmi and you want to integrate Thirdweb autoConnect functionality seamlessly.
 
@@ -146,7 +148,7 @@ Use this approach if your dApp is built using Wagmi and you want to integrate Th
     ```
     
 
-### 3. For Non-React dApps (Agnostic Implementation)
+## 3. For Non-React dApps (Agnostic Implementation)
 
 Use this approach if you are developing a dApp outside of React and need a universal way to integrate autoConnect.
 
