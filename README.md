@@ -169,7 +169,7 @@ Use this approach if you are developing a dApp outside of React and need a unive
     ```jsx
     import { createThirdwebClient } from "thirdweb";
     import { polygon } from "thirdweb/chains";
-    import { EIP1193 } from "thirdweb/wallets";
+    import { autoConnect, EIP1193 } from "thirdweb/wallets";
     
     // Initialize the Thirdweb client
     const client = createThirdwebClient({
