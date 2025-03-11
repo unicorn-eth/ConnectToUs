@@ -1,7 +1,7 @@
-# Add Your dApp to the ETHDenver App Center
-How to enable autoConnect for your dApp to so it can be added to the ETHDenver wallet. This will expose your dApp to the 15k+ attendees at ETHDenver and make it an optional dApp for all future Unicorn.eth deployments.
+# Add Your dApp to the ETHDenver (or any other community's) App Center
+How to enable autoConnect for your dApp to so it can be added to any MyUnicornAccount community's app center. This will expose your dApp to the 19k attendees at ETHDenver and make it an optional dApp for all Unicorn.eth communities.
 
-Once you have completed these steps, please come to the Unicorn.eth booth so we can ensure your dApp can be added to the ETHDenver App Center and accessible to the ETHDenver Community at [https://app.ethdenver.com](https://app.ethdenver.com/) .
+Once you have completed these steps, please submit your dApp to this form https://forms.gle/3kyuEce2fZtd7Umy9 so we can review your dApp and it can be added allowed dApps in the "App Center".
 
 ## AutoConnect Documentation
 
