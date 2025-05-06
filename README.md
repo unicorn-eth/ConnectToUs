@@ -1,5 +1,5 @@
 # Add Your dApp to the any community's App Center
-How to enable autoConnect for your dApp to so it can be added to any MyUnicornAccount community's app center. This will expose your dApp to the 19k attendees at ETHDenver and make it an optional dApp for all Unicorn.eth communities.
+How to enable autoConnect for your dApp to so it can be added to any MyUnicornAccount community's app center. This is the first step to applowing communities such as ETHDenver to include your dApp.
 
 Once you have completed these steps, please submit your dApp to this form https://forms.gle/3kyuEce2fZtd7Umy9 so we can review your dApp and it can be added allowed dApps in the "App Center".
 
