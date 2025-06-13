@@ -39,24 +39,37 @@ export const useUnicornAccount = () => {
         setWallet(capturedWallet || result);
         setIsConnected(true);
         
-        if (capturedWallet) {
-          // Get the real address
+         if (capturedWallet) {
+          // Get the real address - NO fallback to your actual address
           try {
             if (typeof capturedWallet.getAccount === 'function') {
               const account = await capturedWallet.getAccount();
+              console.log('📋 Raw account from wallet:', account);
+              
               const realAddress = account?.address || account;
+              console.log('📍 Extracted address:', realAddress);
+              
               if (realAddress && realAddress.startsWith('0x')) {
                 setAddress(realAddress);
-                console.log('✅ Real address set:', realAddress);
+                console.log('✅ Real address set from wallet:', realAddress);
+              } else {
+                console.log('❌ No valid address found in wallet');
+                // Use a DIFFERENT dummy address to make it obvious when wallet retrieval fails
+                setAddress('0x0000000000000000000000000000000000000000');
               }
+            } else {
+              console.log('❌ getAccount is not a function');
+              setAddress('0x1111111111111111111111111111111111111111'); // Different dummy
             }
           } catch (e) {
-            console.log('getAccount failed:', e.message);
-            setAddress('0xF46BAe3A2a7E816d6DA70b885Bbd0406a719531A'); // Your address as fallback
+            console.log('❌ getAccount failed:', e.message);
+            setAddress('0x2222222222222222222222222222222222222222'); // Different dummy
           }
         } else {
-          setAddress('0xF46BAe3A2a7E816d6DA70b885Bbd0406a719531A'); // Your address as fallback
+          console.log('❌ No captured wallet');
+          setAddress('0x3333333333333333333333333333333333333333'); // Different dummy
         }
+        
         
         // Create simple working provider (same as before that worked)
         const provider = {
