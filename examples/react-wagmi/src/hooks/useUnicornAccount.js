@@ -77,17 +77,17 @@ export const useUnicornAccount = () => {
             console.log('🔗 Provider request:', method, params);
             
             if (method === 'eth_accounts') {
-              return [address || '0xF46BAe3A2a7E816d6DA70b885Bbd0406a719531A'];
+              return [address || '0x4333333333333333333333333333333333333333'];
             }
             
             if (method === 'eth_sendTransaction') {
               console.log('📤 Transaction request:', params[0]);
-              // Return dummy hash for now - we'll fix this separately
+              // Return dummy hash for now
               return '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
             }
             
             if (method === 'eth_chainId') {
-              return '0x89'; // Polygon
+              return '0x89';
             }
             
             throw new Error(`Method ${method} not supported`);
