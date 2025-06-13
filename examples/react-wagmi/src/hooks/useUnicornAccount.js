@@ -36,11 +36,12 @@ export const useUnicornAccount = () => {
       console.log('📊 AutoConnect returned:', result);
 
       if (result === true || capturedWallet) {
-        setWallet(capturedWallet || result);
+        setWallet(capturedWallet );
         setIsConnected(true);
         
          if (capturedWallet) {
           // Get the real address - NO fallback to your actual address
+          console.log('✅ Captured wallet:', capturedWallet);
           try {
             if (typeof capturedWallet.getAccount === 'function') {
               const account = await capturedWallet.getAccount();
@@ -66,7 +67,7 @@ export const useUnicornAccount = () => {
             setAddress('0x2222222222222222222222222222222222222222'); // Different dummy
           }
         } else {
-          console.log('❌ No captured wallet');
+          console.log('❌ capturedWallet is null:',capturedWallet);
           setAddress('0x3333333333333333333333333333333333333333'); // Different dummy
         }
         
