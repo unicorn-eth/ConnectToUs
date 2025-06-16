@@ -27,10 +27,99 @@ export const useUnicornAccount = () => {
           sponsorGas: true,
           factoryAddress: UNICORN_FACTORY_ADDRESS,
         },
-        onConnect: (connectedWallet) => {
-          console.log('🎉 onConnect called with wallet:', connectedWallet);
-          capturedWallet = connectedWallet;
+  onConnect: async (connectedWallet) => {
+    console.log('🎉 onConnect callback triggered with wallet:', connectedWallet);
+    
+    // Update state immediately in the callback
+    setWallet(connectedWallet);
+    setIsConnected(true);
+    
+    try {
+      // Get the real address
+      if (typeof connectedWallet.getAccount === 'function') {
+        const account = await connectedWallet.getAccount();
+        console.log('📋 Account from onConnect:', account);
+        
+        const realAddress = account?.address || account;
+        console.log('📍 Real address from onConnect:', realAddress);
+        
+        if (realAddress && realAddress.startsWith('0x')) {
+          setAddress(realAddress);
+          console.log('✅ Address updated via onConnect:', realAddress);
         }
+      }
+      
+      // Create the provider in the callback too
+      const provider = {
+        request: async ({ method, params }) => {
+          console.log('🔗 Provider request:', method, params);
+          
+          if (method === 'eth_accounts') {
+            const currentAccount = await connectedWallet.getAccount();
+            const currentAddress = currentAccount?.address || currentAccount;
+            return [currentAddress];
+          }
+          
+          if (method === 'eth_sendTransaction') {
+            console.log('📤 REAL Transaction via onConnect wallet:', params[0]);
+            
+            try {
+              const { sendTransaction } = await import("thirdweb");
+              const account = await connectedWallet.getAccount();
+              
+              const transaction = {
+                to: params[0].to,
+                value: BigInt(params[0].value || 0),
+                data: params[0].data || '0x',
+              };
+              
+              console.log('📤 Sending real transaction...');
+              const result = await sendTransaction({
+                transaction,
+                account,
+              });
+              
+              const hash = result.transactionHash || result;
+              console.log('🎉 REAL transaction hash:', hash);
+              return hash;
+              
+            } catch (txError) {
+              console.error('❌ Real transaction failed:', txError);
+              throw txError;
+            }
+          }
+          
+          if (method === 'eth_chainId') {
+            return '0x89';
+          }
+          
+          throw new Error(`Method ${method} not supported`);
+        }
+      };
+      
+      setProvider(provider);
+      console.log('✅ Provider updated via onConnect');
+      
+    } catch (callbackError) {
+      console.error('❌ Error in onConnect callback:', callbackError);
+    } finally {
+      setIsConnecting(false);
+    }
+  },
+  onDisconnect: async (disconnectedWallet) => {
+    console.log('👋 onDisconnect callback triggered with wallet:', disconnectedWallet);
+    
+    // Update state immediately in the callback
+    setWallet(null);
+    setIsConnected(false);
+    
+    setIsConnecting(false);
+  },
+  onError: (error) => {
+    console.error('❌ AutoConnect error:', error);
+    setError(error);
+    setIsConnecting(false);
+  },
       });
 
       console.log('📊 AutoConnect returned:', result);
