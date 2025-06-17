@@ -83,6 +83,7 @@ We make it easy to test your dapp.
 4. Click - "Add a custom dApp" button at the bottom of the page
 ![Add custom dapp](AddCustomdApp.png)
 5. Click - "Yes, I've finished the Integration?" checkbox
+![Finished Integration](FinishedIntegration.png)
 6. Click - "Next"
 7. Enter the dApp url, Title, Description, and a logo (local address is ok for testing)
     ![register your dapp](LivePreview.png)
