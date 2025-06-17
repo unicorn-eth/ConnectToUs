@@ -76,17 +76,17 @@ function App() {
 
 We make it easy to test your dapp.
 
-1 - log in to your community at https://admin.myunicornaccount.com/login ( You can create a free starter account for this purpose)
-2 - Navigate to the "My Community" page
-3 - Click - "Add an app"
+1. log in to your community at https://admin.myunicornaccount.com/login ( You can create a free starter account for this purpose)
+2. Navigate to the "My Community" page
+3. Click - "Add an app"
 ![Add your dapp](Hub.png)
-4 - Click - "Add a custom dApp" button at the bottom of the page
+4. Click - "Add a custom dApp" button at the bottom of the page
 ![Add custom dapp](AddCustomdApp.png)
-5 - Click - "Yes, I've finished the Integration?" checkbox
-6 - Click - "Next"
-7 - Enter the dApp url, Title, Description, and a logo (local address is ok for testing)
+5. Click - "Yes, I've finished the Integration?" checkbox
+6. Click - "Next"
+7. Enter the dApp url, Title, Description, and a logo (local address is ok for testing)
     ![register your dapp](LivePreview.png)
-8 - Now you can click on the Live Preview link to the right to test!
+8. Now you can click on the Live Preview link to the right to test!
 
 **Step 4: Submit for App Center approval**
 
