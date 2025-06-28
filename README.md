@@ -268,18 +268,47 @@ Many applications use signature validation to log-in and authenticate web3 users
 
 First let's have a quick primer on different signature validation schemes on Ethereum:
 
-```md
-1. EOA Signature Validation
-For a standard Externally Owned Account (EOA), validation is a cryptographic process. A user signs a message hash with their private key using the ECDSA algorithm. To verify, a smart contract uses the built-in ecrecover function. This function takes the message hash and the signature, and it returns the public address of the account that signed it. If this recovered address matches the expected signer's address, the signature is valid.
-
-2. ERC-1271: Signatures for Smart Contracts
-Smart contracts don't have private keys, so they can't sign messages like EOAs. ERC-1271 provides a standard for smart contracts to declare a signature valid for themselves.
-A contract implementing this standard has a function: isValidSignature(bytes32 _hash, bytes memory _signature). When a verifier wants to check a signature from a smart contract wallet, it calls this function on the wallet's address. The wallet then runs its own internal logic—like checking if enough multi-sig owners have signed—and returns a magic value (0x1626ba7e) if the signature is valid.
-
-3. ERC-6492: Signature Validation for Undeployed Contracts
-What if a smart contract wallet hasn't been deployed yet (a "counterfactual" account)? You can't call isValidSignature on an address with no code.
-ERC-6492 solves this by creating a "wrapped" signature. The signature is bundled with the information needed to deploy the contract (its factory address and creation data). A verifier first checks if the signing address has code. If not, it looks for this wrapper. If found, it can use the data to simulate the deployment and then call isValidSignature on the simulated contract. This allows for validating signatures from accounts that will be created in the future.
-```
+> 1. EOA Signature Validation
+> 
+> For a standard Externally Owned Account (EOA), validation is a
+> cryptographic process. A user signs a message hash with their private
+> key using the ECDSA algorithm. To verify, a smart contract uses the
+> built-in ecrecover function. This function takes the message hash and
+> the signature, and it returns the public address of the account that
+> signed it. If this recovered address matches the expected signer's
+> address, the signature is valid.
+> 
+>   
+> 
+> 2. ERC-1271: Signatures for Smart Contracts
+> 
+> Smart contracts don't have private keys, so they can't sign messages
+> like EOAs. ERC-1271 provides a standard for smart contracts to declare
+> a signature valid for themselves.
+> 
+> A contract implementing this standard has a function:
+> isValidSignature(bytes32 _hash, bytes memory _signature). When a
+> verifier wants to check a signature from a smart contract wallet, it
+> calls this function on the wallet's address. The wallet then runs its
+> own internal logic—like checking if enough multi-sig owners have
+> signed—and returns a magic value (0x1626ba7e) if the signature is
+> valid.
+> 
+>   
+> 
+> 3. ERC-6492: Signature Validation for Undeployed Contracts
+> 
+> What if a smart contract wallet hasn't been deployed yet (a
+> "counterfactual" account)? You can't call isValidSignature on an
+> address with no code.
+> 
+> ERC-6492 solves this by creating a "wrapped" signature. The signature
+> is bundled with the information needed to deploy the contract (its
+> factory address and creation data). A verifier first checks if the
+> signing address has code. If not, it looks for this wrapper. If found,
+> it can use the data to simulate the deployment and then call
+> isValidSignature on the simulated contract. This allows for validating
+> signatures from accounts that will be created in the future.
 
 For Unicorn.eth, we mainly deal with ERC-1271 and ERC-6492.
 
