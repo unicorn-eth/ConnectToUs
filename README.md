@@ -260,7 +260,7 @@ connectUnicornWallet()
   });
 ```
 
-## Server-side Changes
+## 🛡️ Server-side Changes
 
 Until now, we only looked at how to integrate with Unicorn.eth on the client-side, however there is a minor change that you might want to make it to your application's server-side as well.
 
