@@ -200,6 +200,10 @@ function App() {
 }
 ```
 
+You can find a working example of [React + wagmi Example](./examples/react-wagmi/) in our examples.
+
+It automatically reads the url params once you come from Unicorn.eth and connects you. You can also concatenate the params manually to your localhost url to test things out.(`http://localhost:5174/?walletId=inApp&authCookie=eyJhbGciOiJSUzI1NiIsI...`)
+
 ### Framework Agnostic
 
 **Perfect for:** Vue, Angular, vanilla JavaScript, or any non-React framework
