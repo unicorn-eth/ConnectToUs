@@ -397,5 +397,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - [Thirdweb Documentation](https://portal.thirdweb.com/)
 - [App Center Submission Form](https://forms.gle/3kyuEce2fZtd7Umy9)
-- [Example dApp Repository](https://github.com/MyUnicornAccount/unicorn-dapp-example)
+- [Example dApp Repository](https://github.com/unicorn-eth/ConnectToUs/tree/main/examples)
 - [Unicorn.eth Website](https://unicorn.eth)
