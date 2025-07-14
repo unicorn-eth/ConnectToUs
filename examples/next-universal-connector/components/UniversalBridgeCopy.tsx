@@ -18,9 +18,10 @@ const USDC_POLYGON = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
 const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_DECIMALS = 6;
 
+
 const MERCHANT_WALLET = "0x7049747E615a1C5C22935D5790a664B7E65D9681"; // Store payments
-
-
+const DONATION_ADDRESS = "0x..."; // Charity donations  
+const SERVICE_PROVIDER = "0x..."; // Service payments
 
 const client = createThirdwebClient({
   clientId: "4e8c81182c3709ee441e30d776223354",
@@ -47,7 +48,7 @@ export default function UniversalBridge() {
         if (!activeAccount) throw new Error("No wallet connected");
         
         const transaction = {
-          to: MERCHANT_WALLET,
+          to: activeAccount.address,
           value: toWei("0.001"),
           chain: ethereum,
           client,
@@ -69,13 +70,13 @@ export default function UniversalBridge() {
     },
     {
       name: "Polygon Transaction",
-      description: "Send 2.0 MATIC to yourself on Polygon",
+      description: "Send 5.0 MATIC to yourself on Polygon",
       action: async () => {
         if (!activeAccount) throw new Error("No wallet connected");
         
         const transaction = {
-          to: MERCHANT_WALLET,
-          value: toWei("2.00"),
+          to: activeAccount.address,
+          value: toWei("5.00"),
           chain: polygon,
           client,
         };
