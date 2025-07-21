@@ -198,7 +198,7 @@ export default function TrueUniversalBridge() {
       
       if (balances.length > 0) {
         setStatus(`✅ Found ${balances.length} token balance(s) across chains!`);
-        findRoutes(balances);
+        await findRoutes(balances);
       } else {
         setStatus("😅 No token balances found. Make sure you have tokens on supported chains.");
       }
@@ -213,148 +213,177 @@ export default function TrueUniversalBridge() {
 
   // Find possible routes that can actually be executed automatically
   async function findRoutes(balances: UserBalance[]) {
-    setStatus("🛣️ Finding executable routes...");
-    const routes: RouteOption[] = [];
-
-    // Determine target chain and token based on selection
-    let targetChainName: string;
-    let targetTokenSymbol: string;
-    
-    if (targetToken === "PYUSD") {
-      targetChainName = "Ethereum";
-      targetTokenSymbol = "PYUSD";
-    } else if (targetToken === "USDC-BASE") {
-      targetChainName = "Base";
-      targetTokenSymbol = "USDC";
-    } else if (targetToken === "ETH-BASE") {
-      targetChainName = "Base";
-      targetTokenSymbol = "ETH";
-    } else {
-      targetChainName = "Polygon";
-      targetTokenSymbol = targetToken; // POL, USDC, USDT on Polygon
-    }
-
-    const targetChainConfig = SUPPORTED_CHAINS.find(c => c.name === targetChainName);
-    const targetTokenConfig = targetChainConfig?.tokens.find(t => t.symbol === targetTokenSymbol);
-    
-    if (!targetTokenConfig) {
-      setStatus("❌ Target token not supported");
+    if (!balances || balances.length === 0) {
+      setStatus("❌ No token balances available. Please discover your tokens first.");
       return;
     }
 
-    // Test each balance to see if it can create a working route
-    for (const balance of balances) {
-      const sourceChainConfig = SUPPORTED_CHAINS.find(c => c.name === balance.chainName);
-      const sourceTokenConfig = sourceChainConfig?.tokens.find(t => t.symbol === balance.tokenSymbol);
-      
-      if (!sourceChainConfig || !sourceTokenConfig) continue;
-
-      // Only show routes that we can actually execute:
-
-      // 1. Same chain, same token (direct transfer) - ALWAYS WORKS
-      if (balance.chainName === targetChainName && balance.tokenSymbol === targetTokenSymbol) {
-        routes.push({
-          fromChain: balance.chainName,
-          fromToken: balance.tokenSymbol,
-          fromBalance: balance.balanceFormatted,
-          toChain: targetChainName,
-          toToken: targetTokenSymbol,
-          estimatedOutput: targetAmount,
-          steps: ["Direct transfer"],
-          complexity: 'simple',
-          estimated: false,
-          fromChainId: sourceChainConfig.chain.id,
-          toChainId: targetChainConfig.chain.id,
-          fromTokenAddress: sourceTokenConfig.address,
-          toTokenAddress: targetTokenConfig.address,
-          fromTokenDecimals: sourceTokenConfig.decimals,
-          toTokenDecimals: targetTokenConfig.decimals,
-        });
-      }
-      
-      // 2. Cross-chain, same token (bridge only) - TEST IF BRIDGE API WORKS
-      else if (balance.chainName !== targetChainName && balance.tokenSymbol === targetTokenSymbol) {
-        const bridgeResult = await testBridgeRoute(
-          sourceChainConfig.chain.id,
-          sourceTokenConfig.address,
-          targetChainConfig.chain.id,
-          targetTokenConfig.address,
-          targetTokenConfig.decimals
-        );
-        
-        if (bridgeResult.canBridge) {
-          routes.push({
-            fromChain: balance.chainName,
-            fromToken: balance.tokenSymbol,
-            fromBalance: balance.balanceFormatted,
-            toChain: targetChainName,
-            toToken: targetTokenSymbol,
-            estimatedOutput: bridgeResult.estimatedOutput || `~${targetAmount}`,
-            estimatedInput: bridgeResult.estimatedInput,
-            steps: [`Bridge ${balance.tokenSymbol} from ${balance.chainName} → ${targetChainName}`],
-            complexity: 'bridge',
-            estimated: true,
-            fromChainId: sourceChainConfig.chain.id,
-            toChainId: targetChainConfig.chain.id,
-            fromTokenAddress: sourceTokenConfig.address,
-            toTokenAddress: targetTokenConfig.address,
-            fromTokenDecimals: sourceTokenConfig.decimals,
-            toTokenDecimals: targetTokenConfig.decimals,
-            bridgeQuote: bridgeResult.quote,
-          });
-        }
-      }
-
-      // 3. Cross-chain bridge with automatic swap - TEST IF FULL ROUTE WORKS
-      else if (balance.chainName !== targetChainName) {
-        const bridgeResult = await testBridgeRoute(
-          sourceChainConfig.chain.id,
-          sourceTokenConfig.address,
-          targetChainConfig.chain.id,
-          targetTokenConfig.address,
-          targetTokenConfig.decimals
-        );
-        
-        if (bridgeResult.canBridge) {
-          routes.push({
-            fromChain: balance.chainName,
-            fromToken: balance.tokenSymbol,
-            fromBalance: balance.balanceFormatted,
-            toChain: targetChainName,
-            toToken: targetTokenSymbol,
-            estimatedOutput: bridgeResult.estimatedOutput || `~${targetAmount}`,
-            estimatedInput: bridgeResult.estimatedInput,
-            steps: [`Bridge & convert ${balance.tokenSymbol} from ${balance.chainName} → ${targetTokenSymbol} on ${targetChainName}`],
-            complexity: 'bridge',
-            estimated: true,
-            fromChainId: sourceChainConfig.chain.id,
-            toChainId: targetChainConfig.chain.id,
-            fromTokenAddress: sourceTokenConfig.address,
-            toTokenAddress: targetTokenConfig.address,
-            fromTokenDecimals: sourceTokenConfig.decimals,
-            toTokenDecimals: targetTokenConfig.decimals,
-            bridgeQuote: bridgeResult.quote,
-          });
-        }
-      }
-
-      // Skip same-chain swaps unless we have DEX integration
-      // Skip complex routes that require manual intervention
-    }
-
-    // Sort by complexity (simple first)
-    routes.sort((a, b) => {
-      const complexityOrder = { 'simple': 0, 'bridge': 1, 'complex': 2 };
-      return complexityOrder[a.complexity] - complexityOrder[b.complexity];
-    });
-
-    setAvailableRoutes(routes);
+    setIsScanning(true);
+    setStatus("🛣️ Finding executable routes...");
+    setAvailableRoutes([]);
+    setSelectedRoute(null);
     
-    if (routes.length > 0) {
-      setSelectedRoute(routes[0]); // Auto-select best route
-      setStatus(`🎯 Found ${routes.length} executable route(s). All routes will work automatically.`);
-    } else {
-      setStatus("😅 No automatic routes available. Try different target tokens or amounts.");
+    const routes: RouteOption[] = [];
+
+    try {
+      // Determine target chain and token based on selection
+      let targetChainName: string;
+      let targetTokenSymbol: string;
+      
+      if (targetToken === "PYUSD") {
+        targetChainName = "Ethereum";
+        targetTokenSymbol = "PYUSD";
+      } else if (targetToken === "USDC-BASE") {
+        targetChainName = "Base";
+        targetTokenSymbol = "USDC";
+      } else if (targetToken === "ETH-BASE") {
+        targetChainName = "Base";
+        targetTokenSymbol = "ETH";
+      } else if (targetToken === "ETH-ARBITRUM") {
+        targetChainName = "Arbitrum";
+        targetTokenSymbol = "ETH";
+      } else {
+        targetChainName = "Polygon";
+        targetTokenSymbol = targetToken; // POL, USDC, USDT on Polygon
+      }
+
+      const targetChainConfig = SUPPORTED_CHAINS.find(c => c.name === targetChainName);
+      const targetTokenConfig = targetChainConfig?.tokens.find(t => t.symbol === targetTokenSymbol);
+      
+      if (!targetTokenConfig) {
+        setStatus("❌ Target token not supported");
+        return;
+      }
+
+      // Test each balance to see if it can create a working route
+      for (const balance of balances) {
+        const sourceChainConfig = SUPPORTED_CHAINS.find(c => c.name === balance.chainName);
+        const sourceTokenConfig = sourceChainConfig?.tokens.find(t => t.symbol === balance.tokenSymbol);
+        
+        if (!sourceChainConfig || !sourceTokenConfig) continue;
+
+        // Only show routes that we can actually execute:
+
+        // 1. Same chain, same token (direct transfer) - CHECK SUFFICIENT BALANCE
+        if (balance.chainName === targetChainName && balance.tokenSymbol === targetTokenSymbol) {
+          const availableAmount = parseFloat(balance.balanceFormatted);
+          const requestedAmount = parseFloat(targetAmount);
+          
+          // Only show direct transfer if user has enough balance
+          if (availableAmount >= requestedAmount) {
+            routes.push({
+              fromChain: balance.chainName,
+              fromToken: balance.tokenSymbol,
+              fromBalance: balance.balanceFormatted,
+              toChain: targetChainName,
+              toToken: targetTokenSymbol,
+              estimatedOutput: targetAmount, // They get exactly what they requested
+              steps: [`Direct transfer: ${targetAmount} ${balance.tokenSymbol}`],
+              complexity: 'simple',
+              estimated: false,
+              fromChainId: sourceChainConfig.chain.id,
+              toChainId: targetChainConfig.chain.id,
+              fromTokenAddress: sourceTokenConfig.address,
+              toTokenAddress: targetTokenConfig.address,
+              fromTokenDecimals: sourceTokenConfig.decimals,
+              toTokenDecimals: targetTokenConfig.decimals,
+            });
+          }
+          // If insufficient balance, skip this route (don't show impossible direct transfers)
+        }
+        
+        // 2. Cross-chain, same token (bridge only) - TEST IF BRIDGE API WORKS
+        if (balance.chainName !== targetChainName && balance.tokenSymbol === targetTokenSymbol) {
+          const bridgeResult = await testBridgeRoute(
+            sourceChainConfig.chain.id,
+            sourceTokenConfig.address,
+            targetChainConfig.chain.id,
+            targetTokenConfig.address,
+            targetTokenConfig.decimals,
+            balance // Pass the user balance for checking
+          );
+          
+          if (bridgeResult.canBridge) {
+            routes.push({
+              fromChain: balance.chainName,
+              fromToken: balance.tokenSymbol,
+              fromBalance: balance.balanceFormatted,
+              toChain: targetChainName,
+              toToken: targetTokenSymbol,
+              estimatedOutput: bridgeResult.estimatedOutput || `~${targetAmount}`,
+              estimatedInput: bridgeResult.estimatedInput,
+              steps: [`Bridge ${balance.tokenSymbol} from ${balance.chainName} → ${targetChainName}`],
+              complexity: 'bridge',
+              estimated: true,
+              fromChainId: sourceChainConfig.chain.id,
+              toChainId: targetChainConfig.chain.id,
+              fromTokenAddress: sourceTokenConfig.address,
+              toTokenAddress: targetTokenConfig.address,
+              fromTokenDecimals: sourceTokenConfig.decimals,
+              toTokenDecimals: targetTokenConfig.decimals,
+              bridgeQuote: bridgeResult.quote,
+            });
+          }
+        }
+
+        // 3. Cross-chain bridge with automatic swap - TEST IF FULL ROUTE WORKS
+        else if (balance.chainName !== targetChainName) {
+          const bridgeResult = await testBridgeRoute(
+            sourceChainConfig.chain.id,
+            sourceTokenConfig.address,
+            targetChainConfig.chain.id,
+            targetTokenConfig.address,
+            targetTokenConfig.decimals,
+            balance // Pass the user balance for checking
+          );
+          
+          if (bridgeResult.canBridge) {
+            routes.push({
+              fromChain: balance.chainName,
+              fromToken: balance.tokenSymbol,
+              fromBalance: balance.balanceFormatted,
+              toChain: targetChainName,
+              toToken: targetTokenSymbol,
+              estimatedOutput: bridgeResult.estimatedOutput || `~${targetAmount}`,
+              estimatedInput: bridgeResult.estimatedInput,
+              steps: [`Bridge & convert ${balance.tokenSymbol} from ${balance.chainName} → ${targetTokenSymbol} on ${targetChainName}`],
+              complexity: 'bridge',
+              estimated: true,
+              fromChainId: sourceChainConfig.chain.id,
+              toChainId: targetChainConfig.chain.id,
+              fromTokenAddress: sourceTokenConfig.address,
+              toTokenAddress: targetTokenConfig.address,
+              fromTokenDecimals: sourceTokenConfig.decimals,
+              toTokenDecimals: targetTokenConfig.decimals,
+              bridgeQuote: bridgeResult.quote,
+            });
+          }
+        }
+
+        // Skip same-chain swaps unless we have DEX integration
+        // Skip complex routes that require manual intervention
+      }
+
+      // Sort by complexity (simple first)
+      routes.sort((a, b) => {
+        const complexityOrder = { 'simple': 0, 'bridge': 1, 'complex': 2 };
+        return complexityOrder[a.complexity] - complexityOrder[b.complexity];
+      });
+
+      setAvailableRoutes(routes);
+      
+      if (routes.length > 0) {
+        setSelectedRoute(routes[0]); // Auto-select best route
+        setStatus(`🎯 Found ${routes.length} executable route(s) for ${targetAmount} ${targetToken}. All routes will work automatically.`);
+      } else {
+        setStatus(`😅 No automatic routes available for ${targetAmount} ${targetToken}. Try different target amounts or tokens.`);
+      }
+      
+    } catch (error: any) {
+      console.error("Route finding failed:", error);
+      setStatus("❌ Failed to find routes. Please try again.");
+    } finally {
+      setIsScanning(false);
     }
   }
 
@@ -364,7 +393,8 @@ export default function TrueUniversalBridge() {
     fromTokenAddress: string, 
     toChainId: number, 
     toTokenAddress: string,
-    targetTokenDecimals: number
+    targetTokenDecimals: number,
+    userBalance: UserBalance
   ): Promise<{ canBridge: boolean; quote?: any; estimatedInput?: string; estimatedOutput?: string }> {
     try {
       const targetAmountWei = toWei(targetAmount, targetTokenDecimals);
@@ -381,30 +411,60 @@ export default function TrueUniversalBridge() {
       });
 
       // Check if we got a valid quote with executable steps
-      const canBridge = bridgeQuote && 
-                       bridgeQuote.steps && 
-                       bridgeQuote.steps.length > 0 &&
-                       bridgeQuote.steps.every(step => step.transactions && step.transactions.length > 0);
+      const hasValidSteps = bridgeQuote && 
+                           bridgeQuote.steps && 
+                           bridgeQuote.steps.length > 0 &&
+                           bridgeQuote.steps.every(step => step.transactions && step.transactions.length > 0);
       
-      if (canBridge) {
+      if (hasValidSteps) {
         // Extract actual costs from the quote
         let estimatedInput = "Unknown";
         let estimatedOutput = targetAmount;
+        let inputAmountFormatted = 0;
         
         try {
-          // Try to extract input amount from quote
-          if (bridgeQuote.quote && bridgeQuote.quote.fromAmount) {
-            const inputAmount = parseFloat(bridgeQuote.quote.fromAmount) / Math.pow(10, 6); // Assume 6 decimals
-            estimatedInput = inputAmount.toFixed(4);
+          // Try multiple ways to extract input amount from quote
+          if (bridgeQuote.quote?.fromAmount) {
+            inputAmountFormatted = parseFloat(bridgeQuote.quote.fromAmount) / Math.pow(10, userBalance.decimals);
+            estimatedInput = inputAmountFormatted.toFixed(6);
+          } else if (bridgeQuote.fromAmount) {
+            inputAmountFormatted = parseFloat(bridgeQuote.fromAmount) / Math.pow(10, userBalance.decimals);
+            estimatedInput = inputAmountFormatted.toFixed(6);
+          } else if (bridgeQuote.steps && bridgeQuote.steps[0]?.fromAmount) {
+            inputAmountFormatted = parseFloat(bridgeQuote.steps[0].fromAmount) / Math.pow(10, userBalance.decimals);
+            estimatedInput = inputAmountFormatted.toFixed(6);
           }
           
-          // Try to extract output amount from quote
-          if (bridgeQuote.quote && bridgeQuote.quote.toAmount) {
+          // Try to extract output amount
+          if (bridgeQuote.quote?.toAmount) {
             const outputAmount = parseFloat(bridgeQuote.quote.toAmount) / Math.pow(10, targetTokenDecimals);
-            estimatedOutput = outputAmount.toFixed(4);
+            estimatedOutput = outputAmount.toFixed(6);
+          } else if (bridgeQuote.toAmount) {
+            const outputAmount = parseFloat(bridgeQuote.toAmount) / Math.pow(10, targetTokenDecimals);
+            estimatedOutput = outputAmount.toFixed(6);
           }
         } catch (e) {
-          console.log("Could not extract exact amounts from quote");
+          console.log("Could not extract exact amounts from quote:", e);
+        }
+        
+        // Check if user has sufficient balance for the input amount required
+        const userBalanceAmount = parseFloat(userBalance.balanceFormatted);
+        
+        if (estimatedInput !== "Unknown" && inputAmountFormatted > 0) {
+          if (userBalanceAmount < inputAmountFormatted) {
+            console.log(`Insufficient balance for ${userBalance.tokenSymbol}: need ${inputAmountFormatted.toFixed(6)}, have ${userBalanceAmount.toFixed(6)}`);
+            return { canBridge: false }; // Don't show this route - insufficient funds
+          }
+        } else {
+          // If we can't determine input amount, be conservative and check if they have a reasonable amount
+          // For cross-chain bridges, they usually need more than they're trying to get
+          const estimatedNeedMultiplier = fromChainId !== toChainId ? 1.5 : 1.1; // Extra buffer for bridge vs simple transfers
+          const estimatedMinimumNeeded = parseFloat(targetAmount) * estimatedNeedMultiplier;
+          
+          if (userBalanceAmount < estimatedMinimumNeeded) {
+            console.log(`Conservative balance check failed for ${userBalance.tokenSymbol}: have ${userBalanceAmount.toFixed(6)}, estimated need ${estimatedMinimumNeeded.toFixed(6)}`);
+            return { canBridge: false };
+          }
         }
         
         return {
@@ -418,7 +478,7 @@ export default function TrueUniversalBridge() {
       return { canBridge: false };
              
     } catch (error) {
-      console.log(`Bridge route not available: ${fromChainId} → ${toChainId}`);
+      console.log(`Bridge route not available: ${fromChainId} → ${toChainId}:`, error);
       return { canBridge: false };
     }
   }
@@ -581,21 +641,31 @@ export default function TrueUniversalBridge() {
     }
   }
 
-  // Direct transfer (same token, same chain)
+  // Direct transfer (same token, same chain) - send exact target amount
   async function executeDirectTransfer() {
     const targetAmountWei = toWei(targetAmount, selectedRoute!.toTokenDecimals);
+    
+    // Check if user has sufficient balance
+    const availableBalance = parseFloat(selectedRoute!.fromBalance);
+    const requestedAmount = parseFloat(targetAmount);
+    
+    if (availableBalance < requestedAmount) {
+      throw new Error(`Insufficient balance. You have ${availableBalance} ${selectedRoute!.fromToken}, need ${requestedAmount}`);
+    }
     
     const transaction = prepareTransaction({
       to: activeAccount!.address, // Demo: send to self
       value: selectedRoute!.fromTokenAddress === NATIVE_TOKEN_ADDRESS ? targetAmountWei : undefined,
-      chain: selectedRoute!.fromChainId === ethereum.id ? ethereum : polygon,
+      chain: selectedRoute!.fromChainId === ethereum.id ? ethereum : 
+             selectedRoute!.fromChainId === polygon.id ? polygon : 
+             selectedRoute!.fromChainId === base.id ? base : arbitrum,
       client,
     });
 
     return new Promise<void>((resolve, reject) => {
       sendTx(transaction, {
         onSuccess: () => {
-          setStatus(`✅ Direct transfer complete! Sent ${targetAmount} ${selectedRoute!.toToken}`);
+          setStatus(`✅ Direct transfer complete! Sent ${targetAmount} ${selectedRoute!.toToken} to yourself`);
           resolve();
         },
         onError: (error) => {
@@ -753,19 +823,38 @@ export default function TrueUniversalBridge() {
                 <option value="PYUSD">PYUSD (Ethereum)</option>
                 <option value="USDC-BASE">USDC (Base)</option>
                 <option value="ETH-BASE">ETH (Base)</option>
+                <option value="ETH-ARBITRUM">ETH (Arbitrum)</option>
               </select>
             </div>
           </div>
 
-          {/* Balance Discovery */}
+          {/* Balance Discovery and Route Finding */}
           <div className="space-y-4">
-            <button
-              onClick={scanUserBalances}
-              disabled={isScanning}
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-            >
-              {isScanning ? "Scanning All Chains..." : "🔍 Discover My Tokens"}
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={scanUserBalances}
+                disabled={isScanning}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              >
+                {isScanning ? "Scanning All Chains..." : "🔍 Discover My Tokens"}
+              </button>
+              
+              {userBalances.length > 0 && (
+                <button
+                  onClick={() => findRoutes(userBalances)}
+                  disabled={isScanning}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  {isScanning ? "Finding Routes..." : "🛣️ Find Routes"}
+                </button>
+              )}
+            </div>
+            
+            {userBalances.length > 0 && (
+              <p className="text-sm text-gray-600 text-center">
+                💡 Change your target amount or token above, then click "Find Routes" to recalculate without rescanning
+              </p>
+            )}
           </div>
 
           {/* User Balances Display */}
@@ -802,33 +891,39 @@ export default function TrueUniversalBridge() {
                     }`}
                     onClick={() => setSelectedRoute(route)}
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="font-medium text-gray-800">
-                        {route.estimatedInput ? (
-                          <>
-                            <span className="text-red-600">{route.estimatedInput} {route.fromToken}</span>
-                            {" on "}{route.fromChain}
-                            {" → "}
-                            <span className="text-green-600">{route.estimatedOutput} {route.toToken}</span>
-                          </>
-                        ) : (
-                          <>
-                            {route.fromBalance} {route.fromToken} on {route.fromChain}
-                            {" → "}
-                            {route.estimatedOutput} {route.toToken}
-                          </>
-                        )}
+                    {route.estimatedInput && route.estimatedInput !== "Unknown" ? (
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-medium text-gray-800">
+                          <span className="text-red-600">{route.estimatedInput} {route.fromToken}</span>
+                          <span className="text-gray-500"> on {route.fromChain}</span>
+                          <span className="mx-2">→</span>
+                          <span className="text-green-600">{route.estimatedOutput} {route.toToken}</span>
+                          <span className="text-gray-500"> on {route.toChain}</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getComplexityColor(route.complexity)}`}>
+                          {route.complexity}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getComplexityColor(route.complexity)}`}>
-                        {route.complexity}
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-medium text-gray-800">
+                          <span className="text-blue-600">{route.fromBalance} {route.fromToken}</span>
+                          <span className="text-gray-500"> on {route.fromChain}</span>
+                          <span className="mx-2">→</span>
+                          <span className="text-green-600">{route.estimatedOutput} {route.toToken}</span>
+                          <span className="text-gray-500"> on {route.toChain}</span>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getComplexityColor(route.complexity)}`}>
+                          {route.complexity}
+                        </span>
+                      </div>
+                    )}
                     <div className="text-sm text-gray-600 mb-2">
                       Steps: {route.steps.join(" → ")}
                     </div>
-                    {route.estimatedInput && (
-                      <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                        ⚠️ Actual cost: {route.estimatedInput} {route.fromToken} (from Bridge API quote)
+                    {route.estimatedInput && route.estimatedInput !== "Unknown" && (
+                      <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                        ✅ Real Bridge API cost: {route.estimatedInput} {route.fromToken}
                       </div>
                     )}
                   </div>
