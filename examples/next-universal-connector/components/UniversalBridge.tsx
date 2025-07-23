@@ -11,13 +11,39 @@ import {
   sendTransaction,
   prepareTransaction,
 } from "thirdweb";
-import { useActiveAccount, useSendTransaction } from "thirdweb/react";
+import { useActiveAccount, useSendTransaction, ConnectButton } from "thirdweb/react";
 import { polygon, ethereum, base, arbitrum, optimism } from "thirdweb/chains";
 import { balanceOf, approve } from "thirdweb/extensions/erc20";
 
 const client = createThirdwebClient({
   clientId: "4e8c81182c3709ee441e30d776223354",
 });
+
+// Rough USD price estimates for common tokens (for display purposes only)
+const ROUGH_TOKEN_PRICES: { [key: string]: number } = {
+  'ETH': 2500,
+  'POL': 0.45,
+  'MATIC': 0.45, // Legacy name for POL
+  'USDC': 1.00,
+  'USDT': 1.00,
+  'PYUSD': 1.00,
+  'DAI': 1.00,
+};
+
+// Get rough USD estimate for a token amount
+function getRoughUSDEstimate(amount: string, tokenSymbol: string): string {
+  const cleanTokenSymbol = tokenSymbol.replace('-BASE', '').replace('-ARBITRUM', '');
+  const price = ROUGH_TOKEN_PRICES[cleanTokenSymbol] || 1;
+  const usdValue = parseFloat(amount) * price;
+  
+  if (usdValue < 1) {
+    return `~${usdValue.toFixed(3)}`;
+  } else if (usdValue < 100) {
+    return `~${usdValue.toFixed(2)}`;
+  } else {
+    return `~${usdValue.toFixed(0)}`;
+  }
+}
 
 // Comprehensive token definitions across chains
 const SUPPORTED_CHAINS = [
@@ -97,6 +123,9 @@ interface RouteOption {
   toTokenDecimals: number;
   // Add real quote data
   bridgeQuote?: any;
+  // Add insufficient funds flag
+  insufficientFunds?: boolean;
+  requiredAmount?: string;
 }
 
 export default function TrueUniversalBridge() {
@@ -110,6 +139,7 @@ export default function TrueUniversalBridge() {
   const [targetAmount, setTargetAmount] = useState("2.0");
   const [targetToken, setTargetToken] = useState("POL");
   const [enableRealExecution, setEnableRealExecution] = useState(false);
+  const [showBuyWithCard, setShowBuyWithCard] = useState(false);
 
   // Scan user balances across all chains
   async function scanUserBalances() {
@@ -322,6 +352,8 @@ export default function TrueUniversalBridge() {
               fromTokenDecimals: sourceTokenConfig.decimals,
               toTokenDecimals: targetTokenConfig.decimals,
               bridgeQuote: bridgeResult.quote,
+              insufficientFunds: bridgeResult.insufficientFunds,
+              requiredAmount: bridgeResult.requiredAmount,
             });
           }
         }
@@ -356,6 +388,8 @@ export default function TrueUniversalBridge() {
               fromTokenDecimals: sourceTokenConfig.decimals,
               toTokenDecimals: targetTokenConfig.decimals,
               bridgeQuote: bridgeResult.quote,
+              insufficientFunds: bridgeResult.insufficientFunds,
+              requiredAmount: bridgeResult.requiredAmount,
             });
           }
         }
@@ -364,19 +398,36 @@ export default function TrueUniversalBridge() {
         // Skip complex routes that require manual intervention
       }
 
-      // Sort by complexity (simple first)
+      // Sort routes - executable first, then by complexity
       routes.sort((a, b) => {
+        // Prioritize routes with sufficient funds
+        if (a.insufficientFunds && !b.insufficientFunds) return 1;
+        if (!a.insufficientFunds && b.insufficientFunds) return -1;
+        
+        // Then sort by complexity
         const complexityOrder = { 'simple': 0, 'bridge': 1, 'complex': 2 };
         return complexityOrder[a.complexity] - complexityOrder[b.complexity];
       });
 
       setAvailableRoutes(routes);
       
+      const executableRoutes = routes.filter(r => !r.insufficientFunds);
+      const insufficientRoutes = routes.filter(r => r.insufficientFunds);
+      
       if (routes.length > 0) {
-        setSelectedRoute(routes[0]); // Auto-select best route
-        setStatus(`🎯 Found ${routes.length} executable route(s) for ${targetAmount} ${targetToken}. All routes will work automatically.`);
+        // Auto-select first executable route, or first route if none are executable
+        setSelectedRoute(executableRoutes.length > 0 ? executableRoutes[0] : routes[0]);
+        
+        let statusMessage = `🎯 Found ${routes.length} route(s) for ${targetAmount} ${targetToken}`;
+        if (executableRoutes.length > 0) {
+          statusMessage += `. ${executableRoutes.length} ready to execute`;
+        }
+        if (insufficientRoutes.length > 0) {
+          statusMessage += `, ${insufficientRoutes.length} need more funds`;
+        }
+        setStatus(statusMessage);
       } else {
-        setStatus(`😅 No automatic routes available for ${targetAmount} ${targetToken}. Try different target amounts or tokens.`);
+        setStatus(`😅 No routes available for ${targetAmount} ${targetToken}. Try different target amounts or tokens.`);
       }
       
     } catch (error: any) {
@@ -780,7 +831,7 @@ export default function TrueUniversalBridge() {
           🌍 True Universal Bridge
         </h2>
         <p className="text-gray-600">
-          Discover all your tokens across chains and find the best route to get POL
+          Bridge existing tokens OR buy directly with your debit card
         </p>
       </div>
 
@@ -826,6 +877,23 @@ export default function TrueUniversalBridge() {
                 <option value="ETH-ARBITRUM">ETH (Arbitrum)</option>
               </select>
             </div>
+            
+            {/* Cost Estimate */}
+            <div className="md:col-span-2 mt-2">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-800 font-medium">
+                    Rough Value Estimate:
+                  </span>
+                  <span className="text-blue-900 font-bold">
+                    {getRoughUSDEstimate(targetAmount, targetToken)}
+                  </span>
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  *Estimate only - actual costs may vary based on market conditions and fees
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Balance Discovery and Route Finding */}
@@ -857,6 +925,127 @@ export default function TrueUniversalBridge() {
             )}
           </div>
 
+          {/* Buy with Card Option */}
+          <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-purple-800">💳 Buy with Debit Card</h3>
+              <button
+                onClick={() => setShowBuyWithCard(!showBuyWithCard)}
+                className="text-purple-600 hover:text-purple-800 font-medium"
+              >
+                {showBuyWithCard ? "Hide" : "Show"}
+              </button>
+            </div>
+            
+            {showBuyWithCard && (
+              <div className="space-y-4">
+                <p className="text-purple-700 text-sm">
+                  Skip the bridge and buy {targetAmount} {targetToken.replace('-BASE', '').replace('-ARBITRUM', '')} directly with your debit card.
+                </p>
+                
+                <div className="bg-white p-4 rounded-lg border">
+                  <ConnectButton
+                    client={client}
+                    chain={
+                      targetToken === "PYUSD" ? ethereum :
+                      targetToken === "USDC-BASE" || targetToken === "ETH-BASE" ? base :
+                      targetToken === "ETH-ARBITRUM" ? arbitrum :
+                      polygon
+                    }
+                    connectButton={{
+                      label: "Connect Wallet for Card Purchase"
+                    }}
+                    detailsButton={{
+                      displayBalanceToken: {
+                        [ethereum.id]: targetToken === "PYUSD" ? "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8" : undefined,
+                        [polygon.id]: 
+                          targetToken === "POL" ? NATIVE_TOKEN_ADDRESS :
+                          targetToken === "USDC" ? "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359" :
+                          targetToken === "USDT" ? "0xc2132D05D31c914a87C6611C10748AEb04B58e8F" :
+                          undefined,
+                        [base.id]: 
+                          targetToken === "ETH-BASE" ? NATIVE_TOKEN_ADDRESS :
+                          targetToken === "USDC-BASE" ? "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" :
+                          undefined,
+                        [arbitrum.id]: targetToken === "ETH-ARBITRUM" ? NATIVE_TOKEN_ADDRESS : undefined,
+                      }
+                    }}
+                    showAllWallets={false}
+                    walletConnect={{ showQrModal: false }}
+                    supportedTokens={{
+                      [ethereum.id]: targetToken === "PYUSD" ? [
+                        {
+                          address: "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+                          name: "PayPal USD",
+                          symbol: "PYUSD",
+                        }
+                      ] : [
+                        {
+                          address: NATIVE_TOKEN_ADDRESS,
+                          name: "Ethereum",
+                          symbol: "ETH",
+                        }
+                      ],
+                      [polygon.id]: [
+                        {
+                          address: NATIVE_TOKEN_ADDRESS,
+                          name: "Polygon",
+                          symbol: "POL",
+                        },
+                        {
+                          address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+                          name: "USD Coin",
+                          symbol: "USDC",
+                        }
+                      ],
+                      [base.id]: [
+                        {
+                          address: NATIVE_TOKEN_ADDRESS,
+                          name: "Ethereum",
+                          symbol: "ETH",
+                        },
+                        {
+                          address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                          name: "USD Coin",
+                          symbol: "USDC",
+                        }
+                      ],
+                      [arbitrum.id]: [
+                        {
+                          address: NATIVE_TOKEN_ADDRESS,
+                          name: "Ethereum",
+                          symbol: "ETH",
+                        }
+                      ]
+                    }}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="bg-green-50 p-3 rounded border border-green-200">
+                    <h4 className="font-semibold text-green-800 mb-1">✅ Advantages:</h4>
+                    <ul className="text-green-700 space-y-1">
+                      <li>• No existing crypto needed</li>
+                      <li>• Direct fiat to crypto</li>
+                      <li>• One-step process</li>
+                      <li>• No bridge fees</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
+                    <h4 className="font-semibold text-yellow-800 mb-1">⚠️ Consider:</h4>
+                    <ul className="text-yellow-700 space-y-1">
+                      <li>• Higher fees (~3-5%)</li>
+                      <li>• KYC verification required</li>
+                      <li>• Card limits may apply</li>
+                      <li>• Processing time varies</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* User Balances Display */}
           {userBalances.length > 0 && (
             <div className="space-y-4">
@@ -884,17 +1073,21 @@ export default function TrueUniversalBridge() {
                 {availableRoutes.map((route, index) => (
                   <div
                     key={index}
-                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedRoute === route 
-                        ? 'border-purple-500 bg-purple-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      route.insufficientFunds 
+                        ? 'border-red-300 bg-red-50' 
+                        : selectedRoute === route 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                     onClick={() => setSelectedRoute(route)}
                   >
                     {route.estimatedInput && route.estimatedInput !== "Unknown" ? (
                       <div className="flex justify-between items-start mb-2">
                         <div className="font-medium text-gray-800">
-                          <span className="text-red-600">{route.estimatedInput} {route.fromToken}</span>
+                          <span className={route.insufficientFunds ? "text-red-600" : "text-red-600"}>
+                            {route.estimatedInput} {route.fromToken}
+                          </span>
                           <span className="text-gray-500"> on {route.fromChain}</span>
                           <span className="mx-2">→</span>
                           <span className="text-green-600">{route.estimatedOutput} {route.toToken}</span>
@@ -907,7 +1100,9 @@ export default function TrueUniversalBridge() {
                     ) : (
                       <div className="flex justify-between items-start mb-2">
                         <div className="font-medium text-gray-800">
-                          <span className="text-blue-600">{route.fromBalance} {route.fromToken}</span>
+                          <span className={route.insufficientFunds ? "text-red-600" : "text-blue-600"}>
+                            {route.fromBalance} {route.fromToken}
+                          </span>
                           <span className="text-gray-500"> on {route.fromChain}</span>
                           <span className="mx-2">→</span>
                           <span className="text-green-600">{route.estimatedOutput} {route.toToken}</span>
@@ -921,11 +1116,16 @@ export default function TrueUniversalBridge() {
                     <div className="text-sm text-gray-600 mb-2">
                       Steps: {route.steps.join(" → ")}
                     </div>
-                    {route.estimatedInput && route.estimatedInput !== "Unknown" && (
+                    
+                    {route.insufficientFunds ? (
+                      <div className="text-xs text-red-700 bg-red-100 p-2 rounded border border-red-200">
+                        ❌ Insufficient funds: Need {route.requiredAmount || 'more'} {route.fromToken}, have {route.fromBalance}
+                      </div>
+                    ) : route.estimatedInput && route.estimatedInput !== "Unknown" ? (
                       <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
                         ✅ Real Bridge API cost: {route.estimatedInput} {route.fromToken}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -935,30 +1135,43 @@ export default function TrueUniversalBridge() {
           {/* Execute Route */}
           {selectedRoute && (
             <div className="space-y-4">
-              {/* Execution Mode Toggle */}
-              <div className="p-4 bg-gray-50 rounded-lg border">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="enableRealExecution"
-                    checked={enableRealExecution}
-                    onChange={(e) => setEnableRealExecution(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <label htmlFor="enableRealExecution" className="text-sm font-medium text-gray-700">
-                    Enable Real Execution (⚠️ Uses real tokens and gas)
-                  </label>
+              {/* Insufficient Funds Warning */}
+              {selectedRoute.insufficientFunds && (
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <h4 className="font-semibold text-red-800 mb-2">❌ Cannot Execute Route</h4>
+                  <p className="text-red-700 text-sm">
+                    You need {selectedRoute.requiredAmount} {selectedRoute.fromToken} but only have {selectedRoute.fromBalance}. 
+                    Get more {selectedRoute.fromToken} or try a different route.
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {enableRealExecution 
-                    ? "🔴 REAL MODE: Will execute actual transactions with real costs" 
-                    : "🎭 SIMULATION MODE: Safe testing without real transactions"
-                  }
-                </p>
-              </div>
+              )}
+
+              {/* Execution Mode Toggle */}
+              {!selectedRoute.insufficientFunds && (
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="enableRealExecution"
+                      checked={enableRealExecution}
+                      onChange={(e) => setEnableRealExecution(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <label htmlFor="enableRealExecution" className="text-sm font-medium text-gray-700">
+                      Enable Real Execution (⚠️ Uses real tokens and gas)
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {enableRealExecution 
+                      ? "🔴 REAL MODE: Will execute actual transactions with real costs" 
+                      : "🎭 SIMULATION MODE: Safe testing without real transactions"
+                    }
+                  </p>
+                </div>
+              )}
 
               {/* Safety Warning for Real Execution */}
-              {enableRealExecution && (
+              {enableRealExecution && !selectedRoute.insufficientFunds && (
                 <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                   <h4 className="font-semibold text-red-800 mb-2">⚠️ REAL EXECUTION WARNING</h4>
                   <ul className="text-red-700 text-sm space-y-1">
@@ -973,18 +1186,22 @@ export default function TrueUniversalBridge() {
 
               <button
                 onClick={executeRoute}
-                disabled={isPending}
-                className={`w-full px-6 py-3 text-white rounded-lg font-semibold ${
-                  enableRealExecution 
-                    ? 'bg-red-600 hover:bg-red-700' 
-                    : 'bg-green-600 hover:bg-green-700'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                disabled={isPending || selectedRoute.insufficientFunds}
+                className={`w-full px-6 py-3 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed ${
+                  selectedRoute.insufficientFunds 
+                    ? 'bg-red-400' 
+                    : enableRealExecution 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-green-600 hover:bg-green-700'
+                }`}
               >
-                {isPending 
-                  ? "Executing..." 
-                  : enableRealExecution 
-                    ? `🔴 Execute REAL Route (${targetAmount} ${targetToken})` 
-                    : `🎭 Simulate Route (${targetAmount} ${targetToken})`
+                {selectedRoute.insufficientFunds 
+                  ? `❌ Insufficient Funds` 
+                  : isPending 
+                    ? "Executing..." 
+                    : enableRealExecution 
+                      ? `🔴 Execute REAL Route (${targetAmount} ${targetToken})` 
+                      : `🎭 Simulate Route (${targetAmount} ${targetToken})`
                 }
               </button>
             </div>
@@ -1001,13 +1218,13 @@ export default function TrueUniversalBridge() {
 
           {/* How It Works */}
           <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-            <h4 className="font-semibold text-green-800 mb-2">🎯 Real Bridge Pricing:</h4>
+            <h4 className="font-semibold text-green-800 mb-2">🎯 Multiple Ways to Get Tokens:</h4>
             <ul className="text-green-700 text-sm space-y-1">
-              <li>• 🔍 <strong>Multi-Chain Discovery</strong>: Scans Ethereum, Polygon, Base, Arbitrum</li>
-              <li>• 💰 <strong>Real Bridge Quotes</strong>: Shows actual costs from Bridge API</li>
+              <li>• 🔍 <strong>Multi-Chain Discovery</strong>: Scan existing tokens across 4+ chains</li>
+              <li>• 🌉 <strong>Bridge Routes</strong>: Convert existing crypto with real pricing</li>
+              <li>• 💳 <strong>Buy with Card</strong>: Purchase directly with debit card (no crypto needed)</li>
               <li>• 🧪 <strong>Pre-Tested Routes</strong>: Only shows routes that work end-to-end</li>
-              <li>• 📊 <strong>Accurate Pricing</strong>: Input/output amounts from real quotes</li>
-              <li>• ⚡ <strong>Automatic Execution</strong>: Uses stored quotes for consistency</li>
+              <li>• ⚡ <strong>One-Click Execution</strong>: Automatic execution without manual steps</li>
             </ul>
           </div>
 
