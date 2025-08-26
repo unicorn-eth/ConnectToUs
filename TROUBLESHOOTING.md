@@ -94,17 +94,17 @@ const wallets = [
 
 1. **Check Chain Configuration**
 ```javascript
-// ❌ Wrong - using mainnet instead of polygon
+// ❌ Wrong - using mainnet instead of polygon if your app is on Polygon!
 import { mainnet } from "thirdweb/chains";
 
-// ✅ Correct - Unicorn wallets use Polygon
+// ✅ Correct - Unicorn wallets use Polygon as default, but you can use the EVM you need
 import { polygon } from "thirdweb/chains";
 
 const wallets = [
   inAppWallet({
     smartAccount: {
       factoryAddress: "0xD771615c873ba5a2149D5312448cE01D677Ee48A",
-      chain: polygon, // Must be polygon
+      chain: polygon, 
       gasless: true,
     }
   })
@@ -112,7 +112,7 @@ const wallets = [
 ```
 
 2. **Verify Factory Address**
-   - Factory address is chain-specific
+   - Factory address is chain-specific - but it works for most EVM's - If you have a problem, please contact us.
    - Polygon: `0xD771615c873ba5a2149D5312448cE01D677Ee48A`
    - Using wrong address will cause connection failures
 
