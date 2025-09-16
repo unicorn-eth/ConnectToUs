@@ -1,0 +1,35 @@
+{
+  "name": "unicorn-react-universal-example",
+  "version": "1.0.0",
+  "description": "Production-ready universal wallet support with Unicorn AutoConnect",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:unicorn": "vite --open '/?walletId=inApp&authCookie=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQtcHJvZCJ9.eyJzdG9yZWRUb2tlbiI6eyJqd3RUb2tlbiI6ImV5SmhiR2NpT2lKU1V6STFOaUlzSW5SNWNDSTZJa3BYVkNJc0ltdHBaQ0k2SW1SbFptRjFiSFF0Y0hKdlpDSjkuZXlKemRXSWlPaUl4TVRJeU5EWXpNak0wTWpJNU56RTFOamt6T0RnaUxDSjBlWEJsSWpvaVoyOXZaMnhsSWl3aWFXUWlPaUl4TVRJeU5EWXpNak0wTWpJNU56RTFOamt6T0RnaUxDSmxiV0ZwYkNJNkluSmpZWE4wWVdkQVoyMWhhV3d1WTI5dElpd2laVzFoYVd4V1pYSnBabWxsWkNJNmRISjFaU3dpWm1GdGFXeDVUbUZ0WlNJNklrTmhjM1JoWjI1aGNtOGlMQ0puYVhabGJrNWhiV1VpT2lKU2RYTnpaV3hzSWl3aWJtRnRaU0k2SWxKMWMzTmxiR3dnUTJGemRHRm5ibUZ5YnlJc0luQnBZM1IxY21VaU9pSm9kSFJ3Y3pvdkwyeG9NeTVuYjI5bmJHVjFjMlZ5WTI5dWRHVnVkQzVqYjIwdllTOUJRMmM0YjJOTWVVdG5kVkp1YnpkTGJsVk9iMHR1Tm5SaGRYWjBjR3hmZDNNMVJHaFNlV2x2ZWt0Rk5tTjJaa1prZHpSclJFcDVUajF6T1RZdFl5SXNJbWxoZENJNk1UYzFPREEwTXpFeU9Dd2laWGh3SWpveE56WXdOak0xTVRJNExDSnBjM01pT2lKbGJXSmxaR1JsWkMxM1lXeHNaWFF1ZEdocGNtUjNaV0l1WTI5dEluMC5sUUo4TDBRbG9BWVBWa2xDNFFMWnBEUnQ4aTNncmgyYjR2ekdfMVhsTEFPOU01ZXFHWjNqVlNtWGM5VjNfNmlxV2pGYmdsY0xHcUFRNzBrVWRud1BSTzhMZUtFLUFMR2dURGcxTDRWZUpSREZjblVFbVVlNW95MlpURk8tc2FpQnJxT1czX3B6cmVIdnFrTEk2UTZ3Wnk2bC1ZZ0JTYVFIMHVUdVlwVllHanhWU1QzQTE5Y0JWV2tnUFBqQXI0Z0ZXc2NkWGVMSnlHVkFzQXFONHNfMDcyR19hU3ZnekIwWGNoX3M0QlRMVE9UNlFKRUU2R3dGQUZoeWlvMy1hajd5ZDJ4V20tWG5ldk1tclF4VFNDOEpHM0lsaHAtZGhxUkJKaFFGeG5iLWJSdldKWVI2WGxnbWRtVVFDUXRQbmoyeFAtZ3M2ckdxRGd6Q21FVmc3UUR4MlEiLCJhdXRoUHJvdmlkZXIiOiJHb29nbGVfdjIiLCJkZXZlbG9wZXJDbGllbnRJZCI6IjRlOGM4MTE4MmMzNzA5ZWU0NDFlMzBkNzc2MjIzMzU0IiwiYXV0aERldGFpbHMiOnsiZW1haWwiOiJyY2FzdGFnQGdtYWlsLmNvbSIsInVzZXJXYWxsZXRJZCI6IjMxNWZkNGE5LTYyNDUtNDFmMy05OGMzLTFjMTIxM2MwMDdiNiIsImF1dGhJZGVudGlmaWVyIjoicmNhc3RhZ0BnbWFpbC5jb20iLCJyZWNvdmVyeVNoYXJlTWFuYWdlbWVudCI6IkFXU19NQU5BR0VEIiwid2FsbGV0VHlwZSI6ImVuY2xhdmUiLCJ3YWxsZXRBZGRyZXNzIjoiMHhkMzJmOGJiNTM0NWViN2M3MTZmMDkyMzU0M0NENTE4RkY0Y2JhNzQ1In0sImlzTmV3VXNlciI6ZmFsc2UsInNob3VsZFN0b3JlQ29va2llU3RyaW5nIjp0cnVlfSwiaWF0IjoxNzU4MDQzMTI4LCJleHAiOjE3NjA2MzUxMjgsImlzcyI6ImVtYmVkZGVkLXdhbGxldC50aGlyZHdlYi5jb20iLCJzdWIiOiIweGQzMmY4YmI1MzQ1ZWI3YzcxNmYwOTIzNTQzQ0Q1MThGRjRjYmE3NDUifQ.WeMvvf_dFYVo-T-vOmxZhP3GyU_8SLMJxpc_avlgaLEXWCNoxreH0U8op509UPFCjt91kz7V2j4_IoVH2UI_rdSg-Zl6G3qp2q8TRYTzDvYi7DARgAiuFE8oj5IVMjslNEtnhlNs2sgSezWx7ZPiK1obCgS41BCOxlFze-CqX7DD_GBKTVIe-MLgEHAAsfBKb7nCFMibCkQvBvFapxqS3oqI_CeJNBMU8xsn9kj8Al35wmTVdBCVJZEfhNZ2yl0QxoJ8kZhQOSGoc7eSFIJ1vjf_BqR6wq6sR7oNw0jMvKdi4u56cjLe-T15x8XvvaD5r_V0n_UX5I1lcQBxv7JCjA'",
+    "dev:standalone": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext js,jsx",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "thirdweb": "^5.68.0",
+    "wagmi": "^2.12.0",
+    "viem": "^2.21.0",
+    "@rainbow-me/rainbowkit": "^2.2.0",
+    "@tanstack/react-query": "^5.59.0",
+    "buffer": "^6.0.3",
+    "process": "^0.11.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^5.0.0",
+    "vite-plugin-node-polyfills": "^0.22.0",
+    "stream-browserify": "^3.0.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  }
+}

@@ -93,7 +93,40 @@ We make it easy to test your dapp.
 
 Fill out [this form](https://forms.gle/3kyuEce2fZtd7Umy9) to get your dApp reviewed for inclusion in Unicorn App Centers.
 
-## 📋 Integration Options
+## 📋 Integration Examples
+
+Choose the example that matches your needs:
+
+### 🎯 [Basic Example](./examples/react-basic/)
+**Best for:** Quick prototypes, hackathons, Unicorn-only dApps
+- Simplest integration
+- Thirdweb AutoConnect only
+- Minimal configuration
+
+### 🔧 [WAGMI Example](./examples/react-wagmi/)  
+**Best for:** Learning WAGMI adapter basics
+- WAGMI hooks integration
+- Basic wallet connections
+- Good starting point for WAGMI users
+
+### 🚀 [Universal Example](./examples/react-universal/) **← RECOMMENDED**
+**Best for:** Production dApps, multi-wallet support
+- Works everywhere (Unicorn + all other wallets)
+- Transaction approval system
+- Production error handling
+- Complete test coverage
+- **Use this for real-world applications**
+
+## Quick Decision Guide
+```mermaid
+graph TD
+    A[Which example?] --> B{Production dApp?}
+    B -->|Yes| C[Universal Example]
+    B -->|No| D{Need other wallets?}
+    D -->|No| E[Basic Example]
+    D -->|Yes| F{Using WAGMI?}
+    F -->|Yes| G[WAGMI Example]
+    F -->|No| C
 
 Choose the integration method that matches your current tech stack:
 
