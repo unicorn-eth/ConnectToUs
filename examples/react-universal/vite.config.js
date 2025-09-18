@@ -27,17 +27,13 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        '@components': path.resolve(__dirname, './src/components'),
-        '@hooks': path.resolve(__dirname, './src/hooks'),
-        '@utils': path.resolve(__dirname, './src/utils'),
-        '@config': path.resolve(__dirname, './src/config'),
-        '@assets': path.resolve(__dirname, './src/assets'),
-        
         // Web3 specific aliases
         process: 'process/browser',
         stream: 'stream-browserify',
         util: 'util',
+        buffer: 'buffer',
       },
+      extensions: ['.js', '.jsx', '.json'],
     },
     
     define: {

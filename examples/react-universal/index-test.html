@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test - Universal Unicorn dApp</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .status { 
+        padding: 20px; 
+        background: #f0f0f0; 
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .success { color: green; }
+      .error { color: red; }
+      .warning { color: orange; }
+    </style>
+  </head>
+  <body>
+    <h1>🦄 Universal Wallet dApp - Test Page</h1>
+    
+    <div class="status">
+      <h2>Setup Test Results:</h2>
+      <p class="success">✅ HTML is loading correctly</p>
+      <p id="js-test" class="error">❌ JavaScript not yet loaded</p>
+      <p id="react-test" class="error">❌ React not yet loaded</p>
+      <p id="module-test" class="error">❌ Module system not yet tested</p>
+    </div>
+
+    <div id="root">
+      <div style="padding: 20px; background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 8px;">
+        <h3>⏳ Waiting for React to mount...</h3>
+        <p>If this message persists, check the browser console for errors (F12)</p>
+      </div>
+    </div>
+
+    <!-- Basic JavaScript test -->
+    <script>
+      console.log('🔍 Basic JavaScript works');
+      document.getElementById('js-test').innerHTML = '✅ JavaScript is working';
+      document.getElementById('js-test').className = 'success';
+    </script>
+
+    <!-- React via CDN for testing -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script>
+      if (window.React && window.ReactDOM) {
+        document.getElementById('react-test').innerHTML = '✅ React libraries loaded';
+        document.getElementById('react-test').className = 'success';
+        console.log('✅ React version:', React.version);
+      }
+    </script>
+
+    <!-- Test module loading -->
+    <script type="module">
+      console.log('🔍 ES Modules are working');
+      document.getElementById('module-test').innerHTML = '✅ ES Modules working';
+      document.getElementById('module-test').className = 'success';
+      
+      // Try to load the main app
+      try {
+        const mainModule = await import('/src/main.jsx');
+        console.log('✅ main.jsx loaded successfully');
+      } catch (error) {
+        console.error('❌ Error loading main.jsx:', error);
+        document.getElementById('module-test').innerHTML = '❌ Error loading main.jsx: ' + error.message;
+        document.getElementById('module-test').className = 'error';
+      }
+    </script>
+  </body>
+</html>
