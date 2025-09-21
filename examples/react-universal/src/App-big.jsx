@@ -1,3 +1,5 @@
+
+// Coded Lovingly by @cryptowampum and Claude AI
 // App.jsx - Universal wallet support with ALL providers + Unicorn AutoConnect
 import React, { useEffect, useState } from 'react';
 import { WagmiProvider } from 'wagmi';

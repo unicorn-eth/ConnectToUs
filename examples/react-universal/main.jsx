@@ -1,7 +1,7 @@
 // src/main.jsx - React application entry point
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './src/App';
 import './index.css';
 
 // Global polyfills for Web3 compatibility
