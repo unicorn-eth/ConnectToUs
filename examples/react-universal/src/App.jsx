@@ -1,5 +1,5 @@
-// coded lovingly by @cryptowampum and Claude AI
-// src/App.jsx - Complete setup for REAL Unicorn session
+// Coded lovingly by @cryptowampum and Claude AI
+// src/App.jsx - WITH UNICORN CONTEXT
 import React from 'react';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -7,6 +7,7 @@ import { RainbowKitProvider, ConnectButton } from '@rainbow-me/rainbowkit';
 import { ThirdwebProvider } from 'thirdweb/react';
 import '@rainbow-me/rainbowkit/styles.css';
 import { config } from './config/wagmi';
+import { UnicornProvider, useUnicorn } from './context/UnicornContext';
 import WalletInfo from './components/WalletInfo';
 import UnicornAutoConnect from './components/UnicornAutoConnect';
 import { useUnicornDetection } from './hooks/useUnicornDetection';
@@ -16,6 +17,7 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   const isUnicornEnvironment = useUnicornDetection();
+  const { unicornAddress, isUnicornConnected } = useUnicorn();
   
   return (
     <div className="App">
@@ -26,7 +28,7 @@ function AppContent() {
         textAlign: 'center'
       }}>
         <h1>🦄 Universal Wallet dApp</h1>
-        <p>Real Session Support</p>
+        <p>Unified Wallet Support</p>
         
         {isUnicornEnvironment && (
           <div style={{
@@ -36,7 +38,16 @@ function AppContent() {
             margin: '10px auto',
             maxWidth: '500px'
           }}>
-            🦄 Real Unicorn Session Detected - Attempting AutoConnect...
+            {isUnicornConnected ? (
+              <>
+                ✅ Unicorn Wallet Connected
+                <div style={{ fontSize: '12px', marginTop: '5px' }}>
+                  {unicornAddress?.slice(0, 6)}...{unicornAddress?.slice(-4)}
+                </div>
+              </>
+            ) : (
+              '🦄 Unicorn Environment - AutoConnecting...'
+            )}
           </div>
         )}
         
@@ -52,75 +63,22 @@ function AppContent() {
       <main style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
         <WalletInfo />
         
-        {/* Debug button for testing manual connection */}
-        {isUnicornEnvironment && (
-          <button
-            onClick={async () => {
-              console.log('Testing manual Unicorn connection...');
-              try {
-                const { createThirdwebClient } = await import('thirdweb');
-                const { inAppWallet } = await import('thirdweb/wallets');
-                const { polygon } = await import('thirdweb/chains');
-                
-                const client = createThirdwebClient({
-                  clientId: "4e8c81182c3709ee441e30d776223354"
-                });
-                
-                const wallet = inAppWallet({
-                  smartAccount: {
-                    chain: polygon,
-                    gasless: true,
-                    factoryAddress: "0xD771615c873ba5a2149D5312448cE01D677Ee48A",
-                  }
-                });
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                const authCookie = urlParams.get('authCookie');
-                
-                const account = await wallet.connect({
-                  client,
-                  // Try different connection strategies
-                  ...(authCookie && authCookie !== 'test' ? {
-                    strategy: "auth_endpoint",
-                    payload: authCookie
-                  } : {})
-                });
-                
-                console.log('✅ Manual connection successful!', account);
-                alert('Connected! Check console for details.');
-              } catch (error) {
-                console.error('❌ Manual connection failed:', error);
-                alert('Connection failed! Check console for error.');
-              }
-            }}
-            style={{
-              marginTop: '20px',
-              padding: '10px 20px',
-              background: '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            Test Manual Unicorn Connection
-          </button>
-        )}
-        
         <div style={{ 
-          background: '#f0f9ff', 
-          border: '2px solid #0ea5e9',
+          background: '#d1fae5', 
+          border: '2px solid #10b981',
           padding: '20px', 
           borderRadius: '8px',
-          marginTop: '20px'
+          marginTop: '20px',
+          textAlign: 'center'
         }}>
-          <h3>📝 Real Session Testing</h3>
-          <ol style={{ textAlign: 'left', lineHeight: '1.8' }}>
-            <li>Make sure you're accessing through Unicorn App Center</li>
-            <li>Check console (F12) for connection attempts</li>
-            <li>Try the manual connection button if AutoConnect fails</li>
-            <li>Use RainbowKit button as fallback</li>
-          </ol>
+          <h2>🎉 Unified Wallet System</h2>
+          <p>This dApp now properly tracks both:</p>
+          <ul style={{ textAlign: 'left', display: 'inline-block' }}>
+            <li>✅ Wagmi/RainbowKit connections (MetaMask, etc.)</li>
+            <li>✅ Thirdweb Unicorn connections (AutoConnect)</li>
+            <li>✅ Shows unified wallet info for both</li>
+            <li>✅ Maintains separate connection states</li>
+          </ul>
         </div>
       </main>
 
@@ -130,17 +88,19 @@ function AppContent() {
   );
 }
 
-// IMPORTANT: ThirdwebProvider must be at the top level!
+// Complete App with all providers
 function App() {
   return (
     <ThirdwebProvider>
-      <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider>
-            <AppContent />
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>
+      <UnicornProvider>
+        <WagmiProvider config={config}>
+          <QueryClientProvider client={queryClient}>
+            <RainbowKitProvider>
+              <AppContent />
+            </RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>
+      </UnicornProvider>
     </ThirdwebProvider>
   );
 }

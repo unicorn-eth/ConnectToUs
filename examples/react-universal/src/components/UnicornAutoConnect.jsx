@@ -1,12 +1,13 @@
 // coded lovingly by @cryptowampum and Claude AI
-// src/components/UnicornAutoConnect.jsx - Using Thirdweb's AutoConnect
+// src/components/UnicornAutoConnect.jsx - WITH CONTEXT
 import React from 'react';
 import { AutoConnect } from 'thirdweb/react';
 import { createThirdwebClient } from 'thirdweb';
 import { inAppWallet } from 'thirdweb/wallets';
 import { polygon } from 'thirdweb/chains';
+import { useUnicorn } from '../context/UnicornContext';
 
-// Create client outside component to avoid recreation
+// Create client outside component
 const client = createThirdwebClient({
   clientId: "4e8c81182c3709ee441e30d776223354"
 });
@@ -23,6 +24,8 @@ const wallets = [
 ];
 
 function UnicornAutoConnect() {
+  const { handleUnicornConnect } = useUnicorn();
+
   return (
     <AutoConnect
       client={client}
@@ -35,17 +38,19 @@ function UnicornAutoConnect() {
       onConnect={(wallet) => {
         console.log('🦄 Unicorn wallet auto-connected successfully!');
         console.log('Wallet:', wallet);
-        console.log('Address:', wallet.getAccount?.()?.address);
+        
+        // Get the address
+        const account = wallet.getAccount?.();
+        const address = account?.address;
+        console.log('Address:', address);
+        
+        // Store in context so other components can see it
+        handleUnicornConnect(wallet, address);
       }}
       onError={(error) => {
         console.error('❌ Unicorn AutoConnect failed:', error);
-        console.log('Error details:', {
-          message: error.message,
-          cause: error.cause,
-          stack: error.stack
-        });
       }}
-      timeout={5000} // Give it 5 seconds to connect
+      timeout={5000}
     />
   );
 }
