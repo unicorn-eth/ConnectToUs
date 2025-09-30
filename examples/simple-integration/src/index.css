@@ -1,0 +1,121 @@
+@import '@rainbow-me/rainbowkit/styles.css';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.header {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 30px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+  color: #1f2937;
+}
+
+.header p {
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 800px;
+  margin: 0 auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.status-card {
+  background: #f0f9ff;
+  border: 2px solid #0ea5e9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.status-card h3 {
+  color: #0c4a6e;
+  margin-bottom: 10px;
+}
+
+.status-card p {
+  color: #075985;
+  margin-bottom: 8px;
+}
+
+.success {
+  background: #f0fdf4;
+  border-color: #22c55e;
+}
+
+.success h3 {
+  color: #14532d;
+}
+
+.success p {
+  color: #166534;
+}
+
+.info-section {
+  margin-top: 30px;
+}
+
+.info-section h2 {
+  color: #1f2937;
+  margin-bottom: 20px;
+}
+
+.integration-steps {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.integration-steps h3 {
+  color: #92400e;
+  margin-bottom: 15px;
+}
+
+.integration-steps ol {
+  color: #78350f;
+  padding-left: 20px;
+}
+
+.integration-steps li {
+  margin-bottom: 8px;
+}
+
+code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
