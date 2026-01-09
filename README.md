@@ -1,5 +1,19 @@
 # ConnectToUs - Unicorn.eth dApp Integration
 
+> ⚠️ **DEPRECATED** ⚠️
+>
+> This repository is no longer maintained. Please use our new, simplified library instead:
+>
+> **[@unicorn.eth/autoconnect](https://www.npmjs.com/package/@unicorn.eth/autoconnect)**
+>
+> ```bash
+> npm install @unicorn.eth/autoconnect
+> ```
+>
+> The documentation below is preserved for existing users who need to troubleshoot or maintain legacy integrations.
+
+---
+
 > **One-click wallet connection for the next generation of secure Web3 experiences**
 
 [![npm version](https://badge.fury.io/js/unicorn-connect.svg)](https://badge.fury.io/js/unicorn-connect)
