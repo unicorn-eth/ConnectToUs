@@ -8,6 +8,7 @@ import { ThirdwebProvider, AutoConnect } from 'thirdweb/react';
 import { createThirdwebClient } from 'thirdweb';
 import { inAppWallet } from 'thirdweb/wallets';
 import { base, polygon, ethereum, arbitrum, optimism } from 'thirdweb/chains';
+import { wrapUnicornWallet } from '../utils/unicornWalletWrapper.js';
 
 // Simple chain mapping
 const getChainByName = (chainName) => {
@@ -42,20 +43,13 @@ const IsolatedAutoConnect = ({
   factoryAddress,
   defaultChain = 'base',
   timeout = 5000,
-  debug = false
+  debug = false,
+  enableTransactionApproval = true, // New prop
 }) => {
-  // Configuration with fallbacks
-  const finalClientId = clientId || 
-    import.meta.env.VITE_THIRDWEB_CLIENT_ID || 
-    "4e8c81182c3709ee441e30d776223354";
-    
-  const finalFactoryAddress = factoryAddress || 
-    import.meta.env.VITE_THIRDWEB_FACTORY_ADDRESS || 
-    "0xD771615c873ba5a2149D5312448cE01D677Ee48A";
-    
-  const finalChain = getChainByName(
-    import.meta.env.VITE_DEFAULT_CHAIN || defaultChain
-  );
+  // Configuration - use props with sensible defaults
+  const finalClientId = clientId || "4e8c81182c3709ee441e30d776223354";
+  const finalFactoryAddress = factoryAddress || "0xD771615c873ba5a2149D5312448cE01D677Ee48A";
+  const finalChain = getChainByName(defaultChain);
 
   if (debug) {
     console.log('🦄 IsolatedAutoConnect: Configuration', {
@@ -83,25 +77,44 @@ const IsolatedAutoConnect = ({
       <AutoConnect
         client={client}
         wallets={[wallet]}
-        onConnect={(connectedWallet) => {
+        onConnect={async (connectedWallet) => {
           // Extract wallet address properly
           let walletAddress = 'Unknown';
           try {
             const account = connectedWallet.getAccount?.();
             walletAddress = account?.address || connectedWallet.address || 'No address found';
+            
+            // Wrap wallet to add transaction approval if enabled
+            // Pass client and finalChain to the wrapper
+            const finalWallet = enableTransactionApproval 
+              ? wrapUnicornWallet(connectedWallet, true, client, finalChain)
+              : connectedWallet;
+            
+            if (debug) {
+              console.log('🦄 IsolatedAutoConnect: Success!');
+              console.log('Chain:', finalChain.name);
+              console.log('Address:', walletAddress);
+              console.log('Transaction Approval:', enableTransactionApproval ? 'Enabled' : 'Disabled');
+              console.log('Wallet object:', connectedWallet);
+            }
+            
+            // 🔥 CRITICAL: Dispatch the event so useUniversalWallet can pick it up
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('unicorn-wallet-connected', {
+                detail: { wallet: finalWallet, address: walletAddress }
+              }));
+              
+              if (debug) {
+                console.log('🦄 Event dispatched: unicorn-wallet-connected');
+              }
+            }
+            
+            // Call user-provided callback AFTER dispatching event
+            onConnect?.(finalWallet);
+            
           } catch (e) {
             console.warn('Could not extract wallet address:', e);
           }
-          
-          if (debug) {
-            console.log('🦄 IsolatedAutoConnect: Success!');
-            console.log('Chain:', finalChain.name);
-            console.log('Address:', walletAddress);
-            console.log('Available methods:', Object.getOwnPropertyNames(connectedWallet));
-          }
-          
-          // Call user-provided callback
-          onConnect?.(connectedWallet);
         }}
         onError={(error) => {
           if (debug) {

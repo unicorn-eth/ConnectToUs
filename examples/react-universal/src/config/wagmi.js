@@ -1,14 +1,39 @@
-// src/config/wagmi.js - Simple configuration for Step 1
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { polygon, mainnet } from 'wagmi/chains';
+// src/config/wagmi.js - Updated with environment variable support
+// Coded lovingly by @cryptowampum and Claude AI
 
-// For now, we'll use a placeholder project ID
-// Get your own at: https://cloud.walletconnect.com
-const projectId = '8645c1b6390926a248c31b92742c4286';
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { getSupportedChains, getDefaultChain } from './thirdweb';
+
+// Get configuration from environment
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '8645c1b6390926a248c31b92742c4286';
+const appName = import.meta.env.VITE_APP_NAME || 'Universal Unicorn dApp';
+
+// Get supported chains from thirdweb config
+const supportedChainsList = getSupportedChains();
+const chains = supportedChainsList.map(item => item.chain);
+const defaultChain = getDefaultChain();
+
+// Ensure default chain is first in the list for better UX
+const orderedChains = [
+  defaultChain,
+  ...chains.filter(chain => chain.id !== defaultChain.id)
+];
+
+if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEBUG_MODE === "true") {
+  console.log('🔗 Wagmi configuration:', {
+    defaultChain: defaultChain.name,
+    supportedChains: orderedChains.map(c => c.name),
+    projectId: projectId.slice(0, 8) + '...',
+    appName,
+  });
+}
 
 export const config = getDefaultConfig({
-  appName: 'Unicorn Universal dApp',
+  appName: appName,
   projectId: projectId,
-  chains: [polygon, mainnet],
+  chains: orderedChains,
   ssr: false, // Not using server-side rendering
 });
+
+// Export chain information for other components
+export { orderedChains as chains, defaultChain };

@@ -1,54 +1,114 @@
-// coded lovingly by @cryptowampum and Claude AI
-// src/components/UnicornAutoConnect.jsx - WITH CONTEXT
+// src/components/UnicornAutoConnect.jsx - Updated with modular configuration
+// Coded lovingly by @cryptowampum and Claude AI
+
 import React from 'react';
 import { AutoConnect } from 'thirdweb/react';
-import { createThirdwebClient } from 'thirdweb';
-import { inAppWallet } from 'thirdweb/wallets';
-import { polygon } from 'thirdweb/chains';
 import { useUnicorn } from '../context/UnicornContext';
-
-// Create client outside component
-const client = createThirdwebClient({
-  clientId: "4e8c81182c3709ee441e30d776223354"
-});
-
-// Configure wallet
-const wallets = [
-  inAppWallet({
-    smartAccount: {
-      chain: polygon,
-      gasless: true,
-      factoryAddress: "0xD771615c873ba5a2149D5312448cE01D677Ee48A",
-    }
-  })
-];
+import { 
+  thirdwebClient, 
+  createUnicornWalletFromUrl, 
+  getChainFromUrl,
+  config 
+} from '../config/thirdweb';
 
 function UnicornAutoConnect() {
   const { handleUnicornConnect } = useUnicorn();
-
+  
+  // Get configuration from environment and URL
+  const chain = getChainFromUrl();
+  const wallet = createUnicornWalletFromUrl();
+  
+  if (config.enableDebug) {
+    console.log('🦄 AutoConnect configuration:', {
+      chain: chain.name,
+      chainId: chain.id,
+      factoryAddress: config.factoryAddress,
+      enableAutoConnect: config.enableAutoConnect,
+    });
+  }
+  
+  // Don't render if AutoConnect is disabled
+  if (!config.enableAutoConnect) {
+    if (config.enableDebug) {
+      console.log('🦄 AutoConnect disabled by configuration');
+    }
+    return null;
+  }
+  
   return (
     <AutoConnect
-      client={client}
-      wallets={wallets}
+      client={thirdwebClient}
+      wallets={[wallet]}
       accountAbstraction={{
-        chain: polygon,
+        chain: chain,
         gasless: true,
-        factoryAddress: "0xD771615c873ba5a2149D5312448cE01D677Ee48A",
+        factoryAddress: config.factoryAddress,
       }}
-      onConnect={(wallet) => {
-        console.log('🦄 Unicorn wallet auto-connected successfully!');
-        console.log('Wallet:', wallet);
+      onConnect={(connectedWallet) => {
+        if (config.enableDebug) {
+          console.log('🦄 Unicorn wallet auto-connected successfully!');
+          console.log('Chain:', chain.name, '(' + chain.id + ')');
+          console.log('Wallet:', connectedWallet);
+        }
         
         // Get the address
-        const account = wallet.getAccount?.();
+        const account = connectedWallet.getAccount?.();
         const address = account?.address;
-        console.log('Address:', address);
+        
+        if (config.enableDebug) {
+          console.log('Address:', address);
+        }
         
         // Store in context so other components can see it
-        handleUnicornConnect(wallet, address);
+        handleUnicornConnect(connectedWallet, address);
+        
+        // Optional: Store connection info for debugging/analytics
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem('unicorn_last_connection', JSON.stringify({
+              timestamp: Date.now(),
+              chain: chain.name,
+              chainId: chain.id,
+              address: address,
+              factoryAddress: config.factoryAddress,
+            }));
+          } catch (e) {
+            console.warn('Could not save connection info:', e);
+          }
+        }
       }}
       onError={(error) => {
-        console.error('❌ Unicorn AutoConnect failed:', error);
+        if (config.enableDebug) {
+          console.error('❌ Unicorn AutoConnect failed:', error);
+          console.log('Configuration used:', {
+            chain: chain.name,
+            factoryAddress: config.factoryAddress,
+            clientId: config.clientId,
+          });
+        }
+        
+        // Optional: Track failed connections for debugging
+        if (typeof window !== 'undefined') {
+          try {
+            const failureInfo = {
+              timestamp: Date.now(),
+              error: error.message,
+              chain: chain.name,
+              chainId: chain.id,
+              factoryAddress: config.factoryAddress,
+              userAgent: navigator.userAgent,
+              url: window.location.href,
+            };
+            
+            sessionStorage.setItem('unicorn_last_error', JSON.stringify(failureInfo));
+            
+            if (config.enableDebug) {
+              console.log('🔍 Debug info saved to sessionStorage.unicorn_last_error');
+            }
+          } catch (e) {
+            console.warn('Could not save error info:', e);
+          }
+        }
       }}
       timeout={5000}
     />

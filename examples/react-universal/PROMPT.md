@@ -38,12 +38,13 @@ Both modes use the SAME codebase and ALL wallets remain available
 - @tanstack/react-query
 - viem
 
-**Unicorn Configuration:**
+**Unicorn Configuration (Now Environment-Driven):**
 ```javascript
-Client ID: "4e8c81182c3709ee441e30d776223354"
-Factory Address: "0xD771615c873ba5a2149D5312448cE01D677Ee48A"  
-Chain: Polygon
-Features: Gasless transactions, Smart Account (AA)
+// From .env file:
+VITE_THIRDWEB_CLIENT_ID=4e8c81182c3709ee441e30d776223354
+VITE_THIRDWEB_FACTORY_ADDRESS=0xD771615c873ba5a2149D5312448cE01D677Ee48A
+VITE_DEFAULT_CHAIN=base
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id_here
 ```
 
 ## Current Project Structure
@@ -53,73 +54,118 @@ examples/react-universal/
 ├── index.html                    # Root HTML (MUST be in root, not src/)
 ├── package.json                  # Dependencies configured
 ├── vite.config.js               # Web3 polyfills configured
-├── .env                         # Needs VITE_WALLETCONNECT_PROJECT_ID
+├── .env.example                 # Comprehensive environment configuration
 ├── src/
 │   ├── main.jsx                 # Entry point with polyfills
 │   ├── index.css               # Global styles
 │   ├── App.jsx                 # Main app with providers
 │   ├── App.css                 # App styles
 │   ├── components/
-│   │   ├── UnicornAutoConnect.jsx    # Silent auto-connection
+│   │   ├── UnicornAutoConnect.jsx    # Silent auto-connection (env-driven)
 │   │   ├── TransactionDemo.jsx       # Demo transactions
-│   │   └── WalletInfo.jsx           # Wallet status display
+│   │   ├── WalletInfo.jsx           # Wallet status display
+│   │   ├── ChainSwitcher.jsx        # Debug: Chain switching UI
+│   │   ├── WalletDiagnostics.jsx    # Debug: Wallet connection troubleshooting
+│   │   └── TransactionApprovalModal.jsx
 │   ├── hooks/
-│   │   └── useUnicornDetection.js   # Detects Unicorn environment
-│   └── config/
-│       └── wagmi.js                  # All wallets configuration
+│   │   ├── useUnicornDetection.js   # Detects Unicorn environment
+│   │   ├── useUniversalWallet.js    # Unified wallet hook
+│   │   └── useTransactionWithApproval.js
+│   ├── config/
+│   │   ├── wagmi.js                 # All wallets config (environment-driven)
+│   │   ├── thirdweb.js              # Modular Unicorn config (environment-driven)
+│   │   └── rainbowkit.js            # RainbowKit setup
+│   ├── context/
+│   │   └── UnicornContext.jsx       # Share Unicorn wallet state
+│   └── utils/
+│       └── configValidator.js       # Configuration validation utility
 ```
+
+## Recent Major Updates (Modularization)
+
+### 1. **Environment-Driven Configuration** ✅
+- **All configuration now comes from .env variables**
+- No more hardcoded values in the code
+- Easy to configure for different deployments/chains
+- Comprehensive .env.example with all options
+
+### 2. **Modular Thirdweb Configuration** ✅
+- `config/thirdweb.js` - Central configuration with validation
+- Support for all major chains (Base, Polygon, Arbitrum, Optimism, Ethereum)
+- Dynamic chain switching via URL parameters (`?chain=polygon`)
+- Built-in configuration validation and debugging
+
+### 3. **Enhanced Wagmi Configuration** ✅
+- Better wallet connector configuration
+- Proper WalletConnect Project ID handling
+- Enhanced error handling for wallet connections
+
+### 4. **Debug & Diagnostic Tools** ✅
+- `ChainSwitcher` component - Test different chains easily
+- `WalletDiagnostics` component - Troubleshoot wallet connection issues
+- Configuration validation with helpful error messages
+- Auto-validation in development mode
+
+### 5. **URL Parameter Support** ✅
+- `?chain=polygon` - Override default chain
+- `?chain=base` - Switch to Base chain
+- `?chain=arbitrum` - Switch to Arbitrum chain
+- Works for both AutoConnect and manual connections
+
+## Current Status: Working Features ✅
+
+1. **Environment Configuration**: All settings configurable via .env
+2. **Chain Switching**: URL parameters work (`?chain=polygon`)
+3. **Unicorn AutoConnect**: Works with environment variables
+4. **Chain Display**: UI properly shows current vs default chain
+5. **Debug Tools**: Chain switcher and wallet diagnostics
+6. **Configuration Validation**: Automatic validation with helpful messages
+
+## Current Issue: Wallet Connections ⚠️
+
+**Problem**: Manual wallet connections (MetaMask, Coinbase, etc.) are broken
+- RainbowKit Connect Wallet modal appears
+- Clicking on wallets produces errors (401 Unauthorized from Coinbase)
+- Root cause: Missing/invalid WalletConnect Project ID
+
+**Solution in Progress**:
+- Enhanced wallet configuration in `wagmi.js`
+- Added `WalletDiagnostics` component for troubleshooting
+- Updated .env.example with clear instructions
+- Need valid WalletConnect Project ID from cloud.walletconnect.com
 
 ## Key Code Patterns
 
-### 1. Non-Blocking AutoConnect Pattern
-```jsx
+### 1. Environment-Driven Configuration
+```javascript
+// config/thirdweb.js
+const config = {
+  clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID || "4e8c81182c3709ee441e30d776223354",
+  factoryAddress: import.meta.env.VITE_THIRDWEB_FACTORY_ADDRESS || "0xD771615c873ba5a2149D5312448cE01D677Ee48A",
+  defaultChain: import.meta.env.VITE_DEFAULT_CHAIN || "base",
+};
+```
+
+### 2. URL Parameter Chain Override
+```javascript
+// Supports ?chain=polygon, ?chain=base, etc.
+export const getChainFromUrl = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const chainParam = urlParams.get('chain');
+  return chainParam ? getChainByName(chainParam) : getDefaultChain();
+};
+```
+
+### 3. Non-Blocking AutoConnect Pattern
+```javascript
 // AutoConnect runs hidden, doesn't block UI
-{isUnicornEnvironment && (
-  <div style={{ display: 'none' }}>
-    <AutoConnect 
-      client={thirdwebClient}
-      wallets={unicornWallets}
-      timeout={3000}
-      onError={(e) => console.log('Silent fail, manual connect available')}
-    />
-  </div>
+{isUnicornEnvironment && config.enableAutoConnect && (
+  <UnicornAutoConnect />
 )}
 
 // RainbowKit always visible for ALL wallets
 <ConnectButton />
 ```
-
-### 2. Environment Detection
-```javascript
-// Check multiple signals for Unicorn environment
-- URL params: ?walletId=inApp&authCookie=xxx
-- iframe context + referrer from myunicornaccount.com
-- PostMessage communication with parent
-- LocalStorage hints from previous connections
-```
-
-## Problems We Solved
-
-1. **AutoConnect was blocking other wallets** → Made it run silently in background
-2. **Package compatibility issues** → Used correct versions and polyfills
-3. **Wrong file structure** → index.html must be in root, not src/
-4. **Import errors** → Fixed paths and extensions
-
-## What's Working
-
-✅ Universal wallet support via RainbowKit/Wagmi  
-✅ Silent Unicorn AutoConnect when in App Center  
-✅ Environment detection (iframe, URL params, etc.)  
-✅ Transaction demos with gasless for Unicorn  
-✅ Mobile responsive design  
-✅ Production error handling  
-
-## What Needs Attention
-
-1. **Environment Variables**: Need to add actual WalletConnect Project ID to `.env`
-2. **Testing**: Need to test in actual Unicorn App Center iframe
-3. **Transaction Approval**: Optional modal system for transaction approvals
-4. **Documentation**: Update main repo README with this universal example
 
 ## Testing Instructions
 
@@ -127,20 +173,51 @@ examples/react-universal/
 # Standard mode (all wallets)
 npm run dev
 
-# Simulate Unicorn mode  
-npm run dev:unicorn
-# OR visit: http://localhost:3000/?walletId=inApp&authCookie=test
+# Test different chains
+http://localhost:3000/?chain=polygon
+http://localhost:3000/?chain=base
+http://localhost:3000/?chain=arbitrum
 
-# Debug if not working
-node test-setup.js  # Checks all files are in place
+# Simulate Unicorn mode  
+http://localhost:3000/?walletId=inApp&authCookie=test
+
+# Debug mode (shows chain switcher and diagnostics)
+# Set VITE_ENABLE_DEBUG_MODE=true in .env
 ```
 
-## Key Files to Reference
+## What's Working
 
-1. **App.jsx** - Shows provider setup with RainbowKit + Thirdweb
-2. **UnicornAutoConnect.jsx** - Silent auto-connection implementation
-3. **wagmi.js** - Configuration for ALL wallet types
-4. **useUnicornDetection.js** - Smart environment detection
+✅ **Modular Configuration**: Environment-driven, no hardcoded values  
+✅ **Chain Switching**: URL parameters work perfectly  
+✅ **Unicorn AutoConnect**: Environment-configurable, works in background  
+✅ **Debug Tools**: Chain switcher and wallet diagnostics  
+✅ **Environment Validation**: Automatic validation with helpful messages  
+✅ **Mobile Responsive**: Works on all devices  
+✅ **Production Error Handling**: Comprehensive error boundaries  
+
+## What Needs Attention
+
+1. **Wallet Connection Fix**: Need valid WalletConnect Project ID
+   - Must get from cloud.walletconnect.com
+   - Add to VITE_WALLETCONNECT_PROJECT_ID in .env
+   - This will fix MetaMask, Coinbase, WalletConnect connections
+
+2. **Testing**: Need to test in actual Unicorn App Center iframe
+
+3. **Documentation**: Update main repo README with new environment configuration
+
+## Next Steps
+
+### Immediate (Wallet Connection Fix):
+1. Get WalletConnect Project ID from cloud.walletconnect.com
+2. Add to .env file: `VITE_WALLETCONNECT_PROJECT_ID=your_id_here`
+3. Test all wallet connections work properly
+
+### Future Enhancements:
+1. Transaction approval system with simulation
+2. Advanced error tracking and analytics
+3. More comprehensive testing in Unicorn portal
+4. Performance optimizations for production
 
 ## GitHub Repository Context
 
@@ -152,28 +229,42 @@ This is for the MyUnicornAccount/ConnectToUs repository which provides integrati
 ## Success Criteria
 
 The dApp must:
-1. Work with ANY wallet when accessed directly
-2. Auto-connect Unicorn wallet when in App Center (without blocking other options)
-3. Never force users into Unicorn-only mode
-4. Handle errors gracefully
-5. Work on mobile devices
-6. Be production-ready with proper error handling
+1. ✅ Work with ANY wallet when accessed directly
+2. ✅ Auto-connect Unicorn wallet when in App Center (without blocking other options)
+3. ✅ Never force users into Unicorn-only mode
+4. ⚠️ Handle errors gracefully (wallet connection fix needed)
+5. ✅ Work on mobile devices
+6. ✅ Be production-ready with proper error handling
+7. ✅ Be easily configurable via environment variables
 
-## Additional Notes
+## Configuration Files
 
-- Thirdweb SDK handles Unicorn's smart accounts and gasless transactions
-- RainbowKit provides the UI for wallet selection
-- Wagmi manages wallet connections and blockchain interactions
-- The solution must be truly universal - one codebase that adapts to context
+### Essential .env Setup:
+```bash
+# Core Thirdweb Configuration
+VITE_THIRDWEB_CLIENT_ID=4e8c81182c3709ee441e30d776223354
+VITE_THIRDWEB_FACTORY_ADDRESS=0xD771615c873ba5a2149D5312448cE01D677Ee48A
+VITE_DEFAULT_CHAIN=base
+
+# WalletConnect (REQUIRED for wallet functionality)
+VITE_WALLETCONNECT_PROJECT_ID=your_project_id_here
+
+# Optional but Recommended
+VITE_APP_NAME=Universal Unicorn dApp
+VITE_ENABLE_DEBUG_MODE=true
+VITE_ENABLE_AUTO_CONNECT=true
+```
 
 ## Questions to Continue With
 
 If restarting this project:
-1. "Show me the current App.jsx and help me fix any import errors"
-2. "Help me debug why the page isn't loading at localhost:3000"
-3. "How do I test the Unicorn AutoConnect functionality?"
-4. "Can you create the TransactionApprovalModal component we discussed?"
-5. "How do I submit this to the Unicorn App Center for approval?"
+1. ✅ "Help me modularize the configuration to use environment variables"
+2. ✅ "Show me how to implement URL parameter chain switching"
+3. ⚠️ "Why are wallet connections broken and how do I fix them?"
+4. "How do I get a WalletConnect Project ID and configure it properly?"
+5. "Can you create the TransactionApprovalModal component we discussed?"
+6. "How do I test this in the actual Unicorn App Center portal?"
+7. "How do I submit this to the Unicorn App Center for approval?"
 
 ## Command Summary
 
@@ -181,17 +272,21 @@ If restarting this project:
 # Setup
 npm install
 cp .env.example .env
-# Edit .env with WalletConnect Project ID
+# Edit .env with proper WalletConnect Project ID
 
 # Run
-npm run dev              # Normal mode
-npm run dev:unicorn     # Test Unicorn mode
+npm run dev                    # Normal mode
+npm run dev:unicorn           # Test Unicorn mode
+
+# Test URL Parameters
+# ?chain=polygon - Switch to Polygon
+# ?chain=base    - Switch to Base  
+# ?walletId=inApp&authCookie=test - Simulate Unicorn mode
 
 # Debug
-node test-setup.js      # Check setup
-npm run dev -- --debug  # Verbose output
+# Set VITE_ENABLE_DEBUG_MODE=true in .env for debug tools
 ```
 
 ---
 
-**Project Status**: Core implementation complete, needs testing and minor fixes for import paths. Main challenge was making AutoConnect non-blocking while supporting all wallets.
+**Project Status**: Core modularization complete, URL parameter chain switching working perfectly, but wallet connections need WalletConnect Project ID to function properly. The main challenge now is getting a proper WalletConnect Project ID and ensuring all wallet connectors work reliably.

@@ -1,49 +1,39 @@
-// config/wagmi.ts - Support ALL wallets
+// src/config/wagmi.js - Updated with environment variable support
 // Coded lovingly by @cryptowampum and Claude AI
 
-import { createConfig, http } from "wagmi";
-import { polygon, mainnet, arbitrum } from "wagmi/chains";
-import { 
-  injected, 
-  walletConnect, 
-  coinbaseWallet 
-} from "wagmi/connectors";
-import { inAppWalletConnector } from '@thirdweb-dev/wagmi-adapter';
-import { createThirdwebClient } from "thirdweb";
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { getSupportedChains, getDefaultChain } from './thirdweb';
 
-const thirdwebClient = createThirdwebClient({
-  clientId: "4e8c81182c3709ee441e30d776223354"
+// Get configuration from environment
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '8645c1b6390926a248c31b92742c4286';
+const appName = import.meta.env.VITE_APP_NAME || 'Universal Unicorn dApp';
+
+// Get supported chains from thirdweb config
+const supportedChainsList = getSupportedChains();
+const chains = supportedChainsList.map(item => item.chain);
+const defaultChain = getDefaultChain();
+
+// Ensure default chain is first in the list for better UX
+const orderedChains = [
+  defaultChain,
+  ...chains.filter(chain => chain.id !== defaultChain.id)
+];
+
+if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEBUG_MODE === "true") {
+  console.log('🔗 Wagmi configuration:', {
+    defaultChain: defaultChain.name,
+    supportedChains: orderedChains.map(c => c.name),
+    projectId: projectId.slice(0, 8) + '...',
+    appName,
+  });
+}
+
+export const config = getDefaultConfig({
+  appName: appName,
+  projectId: projectId,
+  chains: orderedChains,
+  ssr: false, // Not using server-side rendering
 });
 
-// Create Unicorn connector
-const unicornConnector = inAppWalletConnector({
-  client: thirdwebClient,
-  smartAccount: {
-    sponsorGas: true,
-    chain: polygon,
-    factoryAddress: "0xD771615c873ba5a2149D5312448cE01D677Ee48A",
-  }
-});
-
-// WAGMI config with ALL connectors
-export const wagmiConfig = createConfig({
-  chains: [polygon, mainnet, arbitrum],
-  connectors: [
-    // Unicorn connector
-    unicornConnector,
-    
-    // Standard connectors - ALWAYS AVAILABLE
-    injected(), // MetaMask, Brave, etc.
-    walletConnect({
-      projectId: 'YOUR_WALLETCONNECT_PROJECT_ID',
-    }),
-    coinbaseWallet({
-      appName: 'Your dApp',
-    }),
-  ],
-  transports: {
-    [polygon.id]: http(),
-    [mainnet.id]: http(),
-    [arbitrum.id]: http(),
-  }
-});
+// Export chain information for other components
+export { orderedChains as chains, defaultChain };
